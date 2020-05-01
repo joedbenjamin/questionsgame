@@ -22,8 +22,8 @@ wss.on('connection', (ws: WebSocket & { id: number }, req: any) => {
   //connection is up, let's add a simple simple event
   ws.on('message', async (message: string) => {
     await handleRoute(message, games, clientId, ws);
-    console.log(games);
-    ws.send(`# of games created ${games.length}`);
+    // console.log(games);
+    // ws.send(`# of games created ${games.length}`);
   });
 
   //send immediatly a feedback to the incoming connection

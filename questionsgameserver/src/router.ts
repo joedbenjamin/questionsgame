@@ -1,4 +1,10 @@
-import { isClientInGame, createGame, joinGame, startGame } from './games';
+import {
+  isClientInGame,
+  createGame,
+  joinGame,
+  startGame,
+  checkGuess,
+} from './games';
 import { IGame, eRouteMethods } from './types';
 import * as WebSocket from 'ws';
 
@@ -21,9 +27,11 @@ export const handleRoute = async (
           timePerQuestion: 10000,
         },
         ws,
+        obj?.name,
       );
       games.push(game);
-      console.log('game created ', game.id);
+      console.log(JSON.stringify({ gameId: game.id }));
+      ws.send(JSON.stringify({ gameId: game.id, clients: game.clients }));
     }
 
     if (
@@ -31,12 +39,26 @@ export const handleRoute = async (
       !isClientInGame(games, clientId)
     ) {
       const gameId = obj?.gameId;
-      joinGame(games, gameId, clientId);
+      joinGame(games, gameId, clientId, obj?.name, ws);
+      games
+        .find((game) => game.id === gameId)
+        ?.clients.forEach((client) => {
+          client?.ws?.send(
+            JSON.stringify({
+              gameId: games.find((game) => game.id === gameId)?.id,
+              clients: games.find((game) => game.id === gameId)?.clients,
+            }),
+          );
+        });
     }
 
     if (obj?.method === eRouteMethods.start) {
       const gameId = obj?.gameId;
       startGame(games, gameId);
+    }
+
+    if (obj?.method === eRouteMethods.guess) {
+      checkGuess(games, obj.gameId, clientId, obj.answerId, obj.questionId);
     }
   } catch (e) {
     console.log('errors');

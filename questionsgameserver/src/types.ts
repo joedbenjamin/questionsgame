@@ -4,6 +4,7 @@ export enum eRouteMethods {
   start = 'start',
   create = 'create',
   join = 'join',
+  guess = 'guess',
 }
 
 export interface IGame {
@@ -11,7 +12,7 @@ export interface IGame {
   timer: number;
   questions: IQuestion[];
   clients: IClient[];
-  currentQuestionId: number;
+  currentQuestionId: string;
   settings: ISettings;
   hasStarted: boolean;
 }
@@ -33,6 +34,7 @@ export interface IQuestion {
   seq: number;
   text: string;
   answers: IAnswer[];
+  done: boolean;
 }
 
 export interface IAnswer {
