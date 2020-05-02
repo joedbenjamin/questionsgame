@@ -9,6 +9,7 @@ import {
   Question,
   LeaderBoard,
   LeaderBoardWrapper,
+  PlaceHeader,
   Place,
   AnswerWrapper,
   AnswersWrapper,
@@ -18,6 +19,8 @@ import {
   Button,
   GameIdWRapper,
   CreateGameWrapper,
+  BottomWrapper,
+  TimeRemaining
 } from './questions';
 const ws = new WebSocket(`ws://localhost:8999/`);
 
@@ -43,6 +46,11 @@ const App = () => {
   const [question, setQuestion]: any = useState('');
   const [questionId, setQuestionId]: any = useState('');
   const [answers, setAnswers]: any = useState([]);
+  const [correctAnswerId, setCorrectAnswerId]: any = useState(undefined);
+  const [answeredQuestions, setAnsweredQuestions]: any = useState([]);
+  const [seq, setSequence]: any = useState(-1);
+  const [clientId, setClientId]: any = useState('');
+  const [timeRemaining, setTimeRemaining]: any = useState(-1);
   useEffect(() => {
     ws.onmessage = function (event) {
       // console.log(event);
@@ -50,17 +58,39 @@ const App = () => {
       if (data.gameId) {
         setGameId(data.gameId);
       }
+
+      if (data.clientId) {
+        setClientId(data.clientId);
+      }
+
       if (data.clients) {
         setClients(data.clients);
+        // const arry = data.clients.questionsAnswered || [];
+        // setAnsweredQuestions(new Array(20).fill(arry));
+        // console.log(data);
       }
 
       if (data.question) {
         setQuestion(data.question);
         setQuestionId(data.questionId);
+        setCorrectAnswerId(undefined);
+      }
+
+      if (data.timeRemaining) {
+        setTimeRemaining(data.timeRemaining);
       }
 
       if (data.answers) {
         setAnswers(data.answers);
+      }
+
+      if (data.correctAnswerId) {
+        console.log(data);
+        setCorrectAnswerId(data.correctAnswerId);
+      }
+
+      if (data.questionsAnswered) {
+        setAnsweredQuestions(data.questionsAnswered);
       }
     };
 
@@ -88,7 +118,7 @@ const App = () => {
   const places = clients
     .sort((a: any, b: any) => b.score - a.score)
     .map((client: any, index: number) => (
-      <Place key={index}>
+      <Place key={index} isClient={client.id === clientId}>
         <span>{index + 1}</span>
         <span>{client.name}</span>
         <span>{client.score}</span>
@@ -113,9 +143,18 @@ const App = () => {
     ws.send(JSON.stringify(obj));
   };
 
+  const getAnswerBackgroundColor = (answerId: string) => {
+    return !!!correctAnswerId
+      ? 'white'
+      : correctAnswerId === answerId
+      ? 'green'
+      : 'red';
+  };
+
   return (
     <React.Fragment>
       <GlobalStyles />
+      <div>{name}</div>
       {gameId === 0 ? (
         <CreateGameWrapper>
           <input placeholder="Name" onChange={handleNameChange} value={name} />
@@ -135,56 +174,57 @@ const App = () => {
             <GameIdWRapper>Game ID {gameId}</GameIdWRapper>
             <LeaderBoardWrapper>
               <LeaderBoard>
-                <Place>
+                <PlaceHeader>
                   <span>Place</span>
                   <span>Name</span>
                   <span>Score</span>
-                </Place>
+                </PlaceHeader>
                 {places}
               </LeaderBoard>
             </LeaderBoardWrapper>
           </React.Fragment>
         ) : null}
         <Horizontal />
-        <QuestionWrapper>
-          <QuestionMainWrapper>
-            <Question>{decodeHTML(question || '')}</Question>
-          </QuestionMainWrapper>
-          <QuestionsAnsweredWrapper>
-            <QuestionsAnswered mode="correct" />
-            <QuestionsAnswered mode="incorrect" />
-            <QuestionsAnswered mode="correct" />
-            <QuestionsAnswered mode="incorrect" />
-            <QuestionsAnswered />
-            <QuestionsAnswered />
-            <QuestionsAnswered />
-            <QuestionsAnswered />
-            <QuestionsAnswered />
-            <QuestionsAnswered />
-          </QuestionsAnsweredWrapper>
-        </QuestionWrapper>
-        <AnswersWrapper>
-          <AnswersWrapperRow>
-            {answers?.slice(0, 2).map((answer: any, index: number) => (
-              <AnswerWrapper
-                data-id={answer.id}
-                key={answer.id}
-                onClick={checkGuess}>
-                <span>{decodeHTML(answer.text)}</span>
-              </AnswerWrapper>
-            ))}
-          </AnswersWrapperRow>
-          <AnswersWrapperRow>
-            {answers?.slice(2, 4).map((answer: any, index: number) => (
-              <AnswerWrapper
-                data-id={answer.id}
-                key={index}
-                onClick={checkGuess}>
-                <span>{decodeHTML(answer.text)}</span>
-              </AnswerWrapper>
-            ))}
-          </AnswersWrapperRow>
-        </AnswersWrapper>
+        <BottomWrapper timeRemaining={timeRemaining}>
+        <TimeRemaining>{timeRemaining < 0 ? '0' : timeRemaining}</TimeRemaining>
+          <QuestionWrapper>
+            <QuestionMainWrapper>
+              <Question>{decodeHTML(question || '')}</Question>
+            </QuestionMainWrapper>
+            <QuestionsAnsweredWrapper>
+              {answeredQuestions.map((q: any, index: number) => (
+                <QuestionsAnswered
+                  key={index}
+                  mode={q === 1 ? 'correct' : q === 0 ? 'incorrect' : ''}
+                />
+              ))}
+            </QuestionsAnsweredWrapper>
+          </QuestionWrapper>
+          <AnswersWrapper>
+            <AnswersWrapperRow>
+              {answers?.slice(0, 2).map((answer: any, index: number) => (
+                <AnswerWrapper
+                  data-id={answer.id}
+                  key={answer.id}
+                  onClick={checkGuess}
+                  backgroundColor={getAnswerBackgroundColor(answer.id)}>
+                  <span>{decodeHTML(answer.text)}</span>
+                </AnswerWrapper>
+              ))}
+            </AnswersWrapperRow>
+            <AnswersWrapperRow>
+              {answers?.slice(2, 4).map((answer: any, index: number) => (
+                <AnswerWrapper
+                  data-id={answer.id}
+                  key={index}
+                  onClick={checkGuess}
+                  backgroundColor={getAnswerBackgroundColor(answer.id)}>
+                  <span>{decodeHTML(answer.text)}</span>
+                </AnswerWrapper>
+              ))}
+            </AnswersWrapperRow>
+          </AnswersWrapper>
+        </BottomWrapper>
       </GameWrapper>
     </React.Fragment>
   );

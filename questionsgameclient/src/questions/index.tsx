@@ -10,7 +10,17 @@ const GameWrapper = styled.div`
   min-width: 30em;
 `;
 
-const QuestionWrapper = styled.div`
+const BottomWrapper: any = styled.div`
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  width: ${(props: any) => (props.timeRemaining >= 0 ? `90%` : `0`)};
+  opacity: ${(props: any) => (props.timeRemaining >= 0 ? `1` : `0`)};
+  transition: width 200ms, opacity 200ms;
+  overflow: hidden;
+`;
+
+const QuestionWrapper: any = styled.div`
   width: 90%;
   max-width: 37.5em;
   height: 15em;
@@ -50,7 +60,7 @@ const QuestionsAnsweredWrapper = styled.div`
 `;
 
 const QuestionsAnswered: any = styled.div`
-  width: 8%;
+  width: ${100 / 20 - 1}%;
   height: 0.625em;
   background-color: ${(props: any) =>
     props.mode === 'correct'
@@ -76,7 +86,7 @@ const Horizontal: any = styled.div`
   height: 0.2125em;
   width: 100%;
   background-color: black;
-  margin: 2em 0;
+  margin: 4em 0;
 `;
 
 const LeaderBoard: any = styled.div`
@@ -96,11 +106,10 @@ const LeaderBoard: any = styled.div`
   /* } */
 `;
 
-const Place: any = styled.div`
+const PlaceHeader: any = styled.div`
   width: 100%;
   display: flex;
   justify-content: space-around;
-  padding-bottom: 0.1em;
   font-size: 2em;
 
   &:nth-child(2n + 1) {
@@ -109,6 +118,15 @@ const Place: any = styled.div`
   span {
     width: 33%;
     text-align: center;
+  }
+`;
+
+const Place: any = styled(PlaceHeader)`
+  &::before {
+    content: '';
+    width: 0.3em;
+    height: auto;
+    background-color: ${(props: any) => (props.isClient ? `blue` : `none`)};
   }
 `;
 
@@ -137,7 +155,7 @@ const AnswersWrapperRow: any = styled.div`
 const AnswerWrapper: any = styled.div`
   min-width: 48%;
   height: 2.5em;
-  background-color: white;
+  background-color: ${(props: any) => props.backgroundColor};
   border: 0.05em solid black;
   border-radius: 3.125em;
   display: flex;
@@ -187,6 +205,12 @@ const CreateGameWrapper: any = styled.div`
   padding: 1em 0;
 `;
 
+const TimeRemaining: any = styled.div`
+  font-size: 1em;
+  color: white;
+  margin: .3em;
+`
+
 export {
   GameWrapper,
   QuestionsAnsweredWrapper,
@@ -196,6 +220,7 @@ export {
   Question,
   LeaderBoardWrapper,
   LeaderBoard,
+  PlaceHeader,
   Place,
   AnswersWrapper,
   QuestionsAndAnswersWrapper,
@@ -205,4 +230,6 @@ export {
   Button,
   GameIdWRapper,
   CreateGameWrapper,
+  BottomWrapper,
+  TimeRemaining
 };

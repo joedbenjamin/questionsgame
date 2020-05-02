@@ -1,4 +1,4 @@
-import { ISettings, IGame, IQuestion, IAnswer } from './types';
+import { ISettings, IGame, IQuestion, IAnswer, IClient } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import * as WebSocket from 'ws';
@@ -56,6 +56,7 @@ const getQuestions = async (count: number): Promise<IQuestion[]> => {
           incorrectAnswers: resp.incorrect_answers,
         }),
         text: resp.question,
+        clientIdWhoAnswered: [],
       }));
     })
     .catch(() => {
@@ -74,7 +75,15 @@ export const createGame = async (
     settings: settings,
     id: uuidv4(),
     timer: settings.timePerQuestion,
-    clients: [{ id: clientId, name, score: 0, ws }],
+    clients: [
+      {
+        id: clientId,
+        name,
+        score: 0,
+        ws,
+        questionsAnswered: new Array(settings.questionsCount).fill(-1),
+      },
+    ],
     questions,
     currentQuestionId: questions[0].id,
     hasStarted: false,
@@ -95,84 +104,104 @@ export const joinGame = (
       name,
       score: 0,
       ws,
+      questionsAnswered: new Array(20).fill(-1),
     });
 };
 
-const startTimer = (games: IGame[], game: IGame, gameId: string) => {
+const startTimer = (game: IGame) => {
   let start = Date.now();
   let index = 0;
-
-  game.clients.forEach((client) => {
-    client.ws?.send(
-      JSON.stringify({
-        question: game.questions.find(
-          (question) => question.id === game.currentQuestionId,
-        )?.text,
-        questionId: game.questions.find(
-          (question) => question.id === game.currentQuestionId,
-        )?.id,
-        answers: game.questions
-          .find((question) => question.id === game.currentQuestionId)
-          ?.answers.map((answer) => ({
-            id: answer.id,
-            text: answer.text,
-          })),
-      }),
-    );
-  });
-
+  sendQuestion(game);
   const interval = setInterval(() => {
     let time = Date.now() - start;
     game.clients.forEach((client) => {
       client.ws?.send(
         JSON.stringify({
-          timeRemaining: Math.ceil(11 - time / 1000).toFixed(),
+          timeRemaining: Math.ceil(10 - time / 1000).toFixed(),
         }),
       );
     });
+    const question = game.questions[index];
     if (time >= game.settings.timePerQuestion) {
       game.questions[index].done = true;
       index += 1;
       if (!!!game.questions[index]) {
-        games = games.filter((game) => game.id !== gameId);
-        console.log(`games count = ${games.length}`);
         clearInterval(interval);
       } else {
+        game?.clients.forEach((client) => {
+          if (
+            !!!game.questions[index - 1].clientIdWhoAnswered.find(
+              (id) => id == client.id,
+            )
+          ) {
+            client.score -= 2;
+          }
+        });
         console.log('index', index);
         game.currentQuestionId = game.questions[index]?.id;
-        // game.questions = game.questions.slice(1);
-        game.clients.forEach((client) => {
-          client.ws?.send(
-            JSON.stringify({
-              question: game.questions.find(
-                (question) => question.id === game.currentQuestionId,
-              )?.text,
-              questionId: game.questions.find(
-                (question) => question.id === game.currentQuestionId,
-              )?.id,
-              answers: game.questions
-                .find((question) => question.id === game.currentQuestionId)
-                ?.answers.map((answer) => ({
-                  id: answer.id,
-                  text: answer.text,
-                })),
-            }),
-          );
-        });
+        sendQuestion(game);
+        sendClients(game);
         console.log('current game ', game);
       }
       start = Date.now();
     }
-  }, 1000);
+  }, 500);
 };
 
 export const startGame = (games: IGame[], gameId: string) => {
-  const game = games.find((game) => game.id === gameId);
+  const game = gameById(gameId, games);
   if (game && !game.hasStarted) {
     game.hasStarted = true;
-    startTimer(games, game, gameId);
+    startTimer(game);
   }
 };
+
+const gameById = (id: string, games: IGame[]) =>
+  games.find((game) => game.id === id);
+
+const questionById = (id: string, questions?: IQuestion[]) =>
+  questions?.find((question) => question.id === id);
+
+const clientById = (id: string, clients?: IClient[]) =>
+  clients?.find((client) => client.id === id);
+
+const getCorrectAnswerId = (answers?: IAnswer[]) =>
+  answers?.find((answer) => answer.isCorrect)?.id;
+
+const sendClients = (game?: IGame) => {
+  game?.clients.forEach((client) => {
+    client?.ws?.send(
+      JSON.stringify({
+        clients: game.clients.map(({ id, name, score }) => ({
+          id,
+          name,
+          score,
+        })),
+      }),
+    );
+  });
+};
+
+const sendQuestion = (game: IGame) => {
+  const questionId = game.currentQuestionId;
+  const question = questionById(questionId, game.questions);
+
+  game.clients.forEach((client) => {
+    client.ws?.send(
+      JSON.stringify({
+        question: question?.text,
+        questionId,
+        answers: question?.answers.map((answer) => ({
+          id: answer.id,
+          text: answer.text,
+        })),
+      }),
+    );
+  });
+};
+
+const hasClientAnsweredQuestion = (id: string, question?: IQuestion) =>
+  !!question?.clientIdWhoAnswered?.find((clientId) => clientId === id);
 
 export const checkGuess = (
   games: IGame[],
@@ -181,25 +210,31 @@ export const checkGuess = (
   answerId: string,
   questionId: string,
 ) => {
-  const correctAnswerId = games
-    .find((game) => game.id === gameId)
-    ?.questions.find((question) => question.id === questionId)
-    ?.answers?.find((answer) => answer.isCorrect)?.id;
-  if (answerId === correctAnswerId) {
-    const client = games
-      ?.find((game) => game.id === gameId)
-      ?.clients.find((client) => client.id === clientId);
-    if (client) {
+  const game = gameById(gameId, games);
+  const question = questionById(questionId, game?.questions);
+  const client = clientById(clientId, game?.clients);
+  const correctAnswerId = getCorrectAnswerId(question?.answers);
+
+  if (client && question && !hasClientAnsweredQuestion(clientId, question)) {
+    question.clientIdWhoAnswered.push(clientId);
+    if (answerId === correctAnswerId) {
+      if (!question.hasFirstCorrectAnswer) {
+        question.hasFirstCorrectAnswer = true;
+        //if first to get right, gets bonus of # of players excluding yourself
+        client.score += (game?.clients.length || 1) - 1;
+      }
       client.score += 1;
+      client.questionsAnswered[question.seq - 1] = 1;
+    } else {
+      client.score -= 1;
+      client.questionsAnswered[question.seq - 1] = 0;
     }
-    games
-      .find((game) => game.id === gameId)
-      ?.clients.forEach((client) => {
-        client?.ws?.send(
-          JSON.stringify({
-            clients: games.find((game) => game.id === gameId)?.clients,
-          }),
-        );
-      });
+    client?.ws?.send(
+      JSON.stringify({
+        correctAnswerId,
+        questionsAnswered: client?.questionsAnswered,
+      }),
+    );
+    // sendClients(game);
   }
 };

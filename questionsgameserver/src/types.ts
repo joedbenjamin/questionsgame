@@ -22,6 +22,7 @@ export interface IClient {
   score: number;
   name: string;
   ws?: WebSocket;
+  questionsAnswered: number[];
 }
 
 export interface ISettings {
@@ -35,6 +36,8 @@ export interface IQuestion {
   text: string;
   answers: IAnswer[];
   done: boolean;
+  hasFirstCorrectAnswer: boolean;
+  clientIdWhoAnswered: string[];
 }
 
 export interface IAnswer {

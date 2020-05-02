@@ -23,15 +23,22 @@ export const handleRoute = async (
       const game = await createGame(
         clientId,
         {
-          questionsCount: 5,
-          timePerQuestion: 10000,
+          questionsCount: 20,
+          timePerQuestion: 12000,
         },
         ws,
         obj?.name,
       );
       games.push(game);
       console.log(JSON.stringify({ gameId: game.id }));
-      ws.send(JSON.stringify({ gameId: game.id, clients: game.clients }));
+      ws.send(
+        JSON.stringify({
+          gameId: game.id,
+          clients: game.clients,
+          questionsCount: 20,
+          clientId,
+        }),
+      );
     }
 
     if (
@@ -50,10 +57,24 @@ export const handleRoute = async (
             }),
           );
         });
+      ws.send(
+        JSON.stringify({
+          clientId,
+        }),
+      );
     }
 
     if (obj?.method === eRouteMethods.start) {
       const gameId = obj?.gameId;
+      games
+        .find((game) => game.id === gameId)
+        ?.clients.forEach((client) => {
+          client?.ws?.send(
+            JSON.stringify({
+              questionsAnswered: new Array(20).fill(-1),
+            }),
+          );
+        });
       startGame(games, gameId);
     }
 
