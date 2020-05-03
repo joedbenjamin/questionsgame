@@ -28,6 +28,7 @@ export interface IClient {
 export interface ISettings {
   questionsCount: number;
   timePerQuestion: number;
+  timeBreakPerQuestion: number;
 }
 
 export interface IQuestion {

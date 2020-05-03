@@ -1,12 +1,7 @@
-import {
-  isClientInGame,
-  createGame,
-  joinGame,
-  startGame,
-  checkGuess,
-} from './games';
 import { IGame, eRouteMethods } from './types';
 import * as WebSocket from 'ws';
+import { isClientInGame, sendSocket, checkGuess } from './games/helper';
+import { createGame, joinGame, startGame } from './games/games';
 
 export const handleRoute = async (
   message: string,
@@ -20,24 +15,17 @@ export const handleRoute = async (
       obj?.method === eRouteMethods.create &&
       !isClientInGame(games, clientId)
     ) {
-      const game = await createGame(
+      //the settings passed to create game can be used in a component to set the values from the front end
+      await createGame(
         clientId,
         {
-          questionsCount: 20,
-          timePerQuestion: 12000,
+          questionsCount: 3,
+          timePerQuestion: 2000,
+          timeBreakPerQuestion: 1500,
         },
         ws,
         obj?.name,
-      );
-      games.push(game);
-      console.log(JSON.stringify({ gameId: game.id }));
-      ws.send(
-        JSON.stringify({
-          gameId: game.id,
-          clients: game.clients,
-          questionsCount: 20,
-          clientId,
-        }),
+        games,
       );
     }
 
@@ -50,11 +38,12 @@ export const handleRoute = async (
       games
         .find((game) => game.id === gameId)
         ?.clients.forEach((client) => {
-          client?.ws?.send(
-            JSON.stringify({
+          sendSocket(
+            {
               gameId: games.find((game) => game.id === gameId)?.id,
               clients: games.find((game) => game.id === gameId)?.clients,
-            }),
+            },
+            client?.ws,
           );
         });
       ws.send(
@@ -66,15 +55,6 @@ export const handleRoute = async (
 
     if (obj?.method === eRouteMethods.start) {
       const gameId = obj?.gameId;
-      games
-        .find((game) => game.id === gameId)
-        ?.clients.forEach((client) => {
-          client?.ws?.send(
-            JSON.stringify({
-              questionsAnswered: new Array(20).fill(-1),
-            }),
-          );
-        });
       startGame(games, gameId);
     }
 

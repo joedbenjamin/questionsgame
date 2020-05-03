@@ -1,18 +1,64 @@
-import styled from 'styled-components';
+import styled, { createGlobalStyle, css } from 'styled-components';
+import imgBg from '../bg6.jpg';
 
-const GameWrapper = styled.div`
+const GlobalStyles = createGlobalStyle`
+  html, body {
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    font-size: 16px;
+  }
+`;
+
+const bg_stuff = css`
+  background-image: url(${imgBg});
+  background-position: left;
+  background-repeat: no-repeat;
+  background-size: cover;
   height: 100vh;
-  width: 100%;
+  width: 100vw;
+`;
+
+const flex_center = css`
   display: flex;
   align-items: center;
+  justify-content: center;
+`;
+
+const Background = styled.div`
+  ${bg_stuff}
+  ${flex_center}
+  filter: brightness(0.7);
+`;
+
+const GameWrapper = styled.div`
+  ${flex_center}
   flex-direction: column;
-  background-color: brown;
-  min-width: 30em;
+  height: 95%;
+  width: 95%;
+  overflow: hidden;
+  position: absolute;
+  box-shadow: 0 1em 1em 0 rgba(0, 0, 0, 1);
+
+  &::after {
+    ${bg_stuff}
+    content: '';
+    position: absolute;
+    filter: blur(1.2em) brightness(1.1);
+  }
+`;
+
+const Game = styled.div`
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 `;
 
 const BottomWrapper: any = styled.div`
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-direction: column;
   width: ${(props: any) => (props.timeRemaining >= 0 ? `90%` : `0`)};
   opacity: ${(props: any) => (props.timeRemaining >= 0 ? `1` : `0`)};
@@ -28,6 +74,7 @@ const QuestionWrapper: any = styled.div`
   border-radius: 0.9375em;
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-direction: column;
 `;
 
@@ -60,7 +107,7 @@ const QuestionsAnsweredWrapper = styled.div`
 `;
 
 const QuestionsAnswered: any = styled.div`
-  width: ${100 / 20 - 1}%;
+  width: ${(props: any) => 100 / props.count - 1}%;
   height: 0.625em;
   background-color: ${(props: any) =>
     props.mode === 'correct'
@@ -71,63 +118,11 @@ const QuestionsAnswered: any = styled.div`
   border-radius: 1.25em;
 `;
 
-const LeaderBoardWrapper: any = styled.div`
-  width: 90%;
-  max-width: 37.5em;
-  background-color: white;
-  border-radius: 0.9375em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.6em 0;
-`;
-
 const Horizontal: any = styled.div`
-  height: 0.2125em;
+  height: 0.1em;
   width: 100%;
   background-color: black;
   margin: 4em 0;
-`;
-
-const LeaderBoard: any = styled.div`
-  width: 95%;
-  background-color: pink;
-  display: flex;
-  flex-direction: column;
-
-  /* &::before { */
-  /*   content: 'Leader Board'; */
-  /*   position: relative; */
-  /*   background-color: white; */
-  /*   text-align: center; */
-  /*   font-size: 1.8em; */
-  /*   padding: 0.3em 0; */
-  /*   font-weight: bold; */
-  /* } */
-`;
-
-const PlaceHeader: any = styled.div`
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  font-size: 2em;
-
-  &:nth-child(2n + 1) {
-    background-color: rgba(255, 0, 0, 0.2);
-  }
-  span {
-    width: 33%;
-    text-align: center;
-  }
-`;
-
-const Place: any = styled(PlaceHeader)`
-  &::before {
-    content: '';
-    width: 0.3em;
-    height: auto;
-    background-color: ${(props: any) => (props.isClient ? `blue` : `none`)};
-  }
 `;
 
 const QuestionsAndAnswersWrapper: any = styled.div`
@@ -180,20 +175,6 @@ const Button: any = styled.input`
   background-color: green;
 `;
 
-const GameIdWRapper: any = styled.div`
-  width: 95%;
-  max-width: 25em;
-  height: 3em;
-  width: 80%;
-  background-color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: bold;
-  font-size: 1.2em;
-  text-align: center;
-`;
-
 const CreateGameWrapper: any = styled.div`
   width: 60%;
   margin: 0 auto;
@@ -203,13 +184,14 @@ const CreateGameWrapper: any = styled.div`
   align-items: center;
   flex-direction: column;
   padding: 1em 0;
+  z-index: 1;
 `;
 
 const TimeRemaining: any = styled.div`
   font-size: 1em;
   color: white;
-  margin: .3em;
-`
+  margin: 0.3em;
+`;
 
 export {
   GameWrapper,
@@ -218,18 +200,16 @@ export {
   QuestionMainWrapper,
   QuestionsAnswered,
   Question,
-  LeaderBoardWrapper,
-  LeaderBoard,
-  PlaceHeader,
-  Place,
   AnswersWrapper,
   QuestionsAndAnswersWrapper,
   AnswerWrapper,
   AnswersWrapperRow,
   Horizontal,
   Button,
-  GameIdWRapper,
   CreateGameWrapper,
   BottomWrapper,
-  TimeRemaining
+  TimeRemaining,
+  GlobalStyles,
+  Background,
+  Game,
 };
