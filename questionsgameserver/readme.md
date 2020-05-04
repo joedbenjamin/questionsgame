@@ -1,10 +1,10 @@
-# Build a Triva Game using WebSockets
+# Build a Triva Game using WebSockets with Typescript
 
 ## Build the Server Code
 
 First, we will need to create some types but what will they be?
 
- * **Game** - this is the main type where others will branch from
+ * **IGame** - this is the main interface where other types will branch from
    * **id** - a distinct identifier to represent each game
    * **currentQuestionId** - keeps track of the current question
    * **done** - boolean value to know if the game is finished
@@ -30,17 +30,20 @@ First, we will need to create some types but what will they be?
        &nbsp;
 
  * **Client** - each person (computer, phone, etc) at the url of the game
-   * **id** - a distinct identifier to represent client 
-   * **name** - the display name of the person
-   * **questionsAnswered** - boolean value to know if the game is finished
+   * **id** - a distinct identifier to represent the client 
+   * **name** - the display name of the client
+   * **questionsAnswered** - keeps track of all answered questions where
+     * 1 - answered correctly
+     * 0 - answered incorrectly
+     * -1 - not answered
    * **score** - the current score 
-   * **ws** - the websocket for each client, this allows to send data to the correct client
+   * **ws** - the websocket for each client, which allows us to send data to the correct client
 
        ```
           export interface IClient {
             id: string;
             name: string;
-            questionsAnswered: number[];
+            questionsAnswered?: eQuestionAnswered[];
             score: number;
             ws?: WebSocket;
           }

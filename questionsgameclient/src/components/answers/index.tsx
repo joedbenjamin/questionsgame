@@ -26,7 +26,7 @@ const Answers: React.SFC<IAnswersProps> = ({
 }) => (
   <AnswersWrapper>
     <AnswersWrapperRow>
-      {answers?.slice(0, 4).map((answer: any) => (
+      {answers?.slice(0, 2).map((answer: any) => (
         <AnswerWrapper
           data-id={answer.id}
           key={answer.id}

@@ -7,6 +7,12 @@ export enum eRouteMethods {
   guess = 'guess',
 }
 
+export enum eQuestionAnswered {
+  notAnswered = -1,
+  correct = 1,
+  incorrect = 0,
+}
+
 export interface IGame {
   id: string;
   currentQuestionId: string;

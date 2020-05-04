@@ -1,4 +1,4 @@
-import { ISettings, IGame, eRouteMethods } from '../types';
+import { ISettings, IGame, eRouteMethods, eQuestionAnswered } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import * as WebSocket from 'ws';
 import { getQuestions, startInterval, gameById, sendSocket } from './helper';
@@ -21,7 +21,9 @@ export const createGame = async (
         name,
         score: 0,
         ws,
-        questionsAnswered: new Array(settings.questionsCount).fill(-1),
+        questionsAnswered: new Array(settings.questionsCount).fill(
+          eQuestionAnswered.notAnswered,
+        ),
       },
     ],
     questions,
@@ -54,7 +56,9 @@ export const joinGame = (
     name,
     score: 0,
     ws,
-    questionsAnswered: new Array(game.settings.questionsCount).fill(-1),
+    questionsAnswered: new Array(game.settings.questionsCount).fill(
+      eQuestionAnswered.notAnswered,
+    ),
   });
   sendSocket({ method: 'setClient', clientId, isInGame: true }, ws);
   game?.clients.forEach((client) => {
@@ -73,7 +77,11 @@ export const startGame = (games: IGame[], gameId: string) => {
   const game = gameById(gameId, games);
   game?.clients.forEach((client) => {
     sendSocket(
-      { questionsAnswered: new Array(game.settings.questionsCount).fill(-1) },
+      {
+        questionsAnswered: new Array(game.settings.questionsCount).fill(
+          eQuestionAnswered.notAnswered,
+        ),
+      },
       client?.ws,
     );
   });
