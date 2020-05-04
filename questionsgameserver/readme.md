@@ -121,7 +121,7 @@ First, we will need to create some types but what will they be?
         ws.id = clientId;
 
       ```
-  * listen for all messages and send to the handleRoute method inthe router.ts file 
+  * listen for all messages and send to the handleRoute method in the router.ts file 
 
       ```
         ws.on('message', async (message: string) => {
@@ -130,7 +130,7 @@ First, we will need to create some types but what will they be?
 
       ```
 
-## Create router.ts file to be the entry point for all of the websocket request to go to
+## router.ts - routes the work to be done to the correct methods
 
   * First we parse the message into json with `const obj = JSON.parse(message);`
   * check for the following methods:
