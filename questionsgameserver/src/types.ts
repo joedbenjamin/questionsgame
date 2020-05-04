@@ -45,7 +45,7 @@ export interface IQuestion {
   answers: IAnswer[];
   done: boolean;
   hasFirstCorrectAnswer: boolean;
-  clientIdWhoAnswered: string[];
+  clientIdsWhoAnswered: string[];
 }
 
 export interface IAnswer {

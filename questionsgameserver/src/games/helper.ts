@@ -59,7 +59,7 @@ const getQuestions = async (count: number): Promise<IQuestion[]> => {
           incorrectAnswers: resp.incorrect_answers,
         }),
         text: resp.question,
-        clientIdWhoAnswered: [],
+        clientIdsWhoAnswered: [],
       }));
     })
     .catch(() => {
@@ -120,7 +120,7 @@ const startInterval = (game: IGame) => {
 
       game?.clients.forEach((client) => {
         if (
-          !!!game.questions[index - 1].clientIdWhoAnswered.find(
+          !!!game.questions[index - 1].clientIdsWhoAnswered.find(
             (id) => id == client.id,
           )
         ) {
@@ -184,7 +184,7 @@ const sendQuestion = (game: IGame) => {
 };
 
 const hasClientAnsweredQuestion = (id: string, question?: IQuestion) =>
-  !!question?.clientIdWhoAnswered?.find((clientId) => clientId === id);
+  !!question?.clientIdsWhoAnswered?.find((clientId) => clientId === id);
 
 const checkGuess = (
   games: IGame[],
@@ -199,7 +199,7 @@ const checkGuess = (
   const correctAnswerId = getCorrectAnswerId(question?.answers);
 
   if (client && question && !hasClientAnsweredQuestion(clientId, question)) {
-    question.clientIdWhoAnswered.push(clientId);
+    question.clientIdsWhoAnswered.push(clientId);
     if (answerId === correctAnswerId) {
       if (!question.hasFirstCorrectAnswer) {
         question.hasFirstCorrectAnswer = true;
