@@ -15,29 +15,41 @@ interface ILeaderBoardCompProps {
   clientId: string;
 }
 
-export const LeaderBoardComp: React.SFC<ILeaderBoardCompProps> = ({
+const LeaderBoardComp: React.SFC<ILeaderBoardCompProps> = ({
   gameId,
   visible,
   clients,
   clientId,
 }) => {
-  const places = useMemo(
-    () =>
-      clients
-        .sort((a: any, b: any) => b.score - a.score)
-        .map((client: any, index: number) => (
-          <Place key={index} isClient={client.id === clientId}>
-            <span>{index + 1}</span>
+  const places = useMemo(() => {
+    const me = clients.filter((c) => c.id === clientId);
+    const rest = clients.filter((c) => c.id !== clientId).slice(0, 2);
+    let last: any = {};
+    let position: number = 0;
+
+    return [...me, ...rest]
+      .sort((a: any, b: any) => b.score - a.score)
+      .map((client: any) => {
+        const result = (
+          <Place key={client.id} isClient={client.id === clientId}>
+            <span>
+              {last && last?.score === client.score ? position : ++position}
+            </span>
             <span>{client.name}</span>
             <span>{client.score}</span>
           </Place>
-        )),
-    [clients, clientId],
-  );
+        );
+        last = client;
+        return result;
+      });
+  }, [clients, clientId]);
+
   return visible ? (
     <React.Fragment>
       <Wrapper>
-        <GameIdWRapper>Game ID {gameId}</GameIdWRapper>
+        <GameIdWRapper>
+          {gameId === '-1' ? 'Game Over' : `Game ID ${gameId}`}
+        </GameIdWRapper>
         <LeaderBoardWrapper>
           <LeaderBoard>
             <PlaceHeader>
@@ -52,3 +64,5 @@ export const LeaderBoardComp: React.SFC<ILeaderBoardCompProps> = ({
     </React.Fragment>
   ) : null;
 };
+
+export default LeaderBoardComp;

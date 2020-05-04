@@ -41,7 +41,7 @@ const ManageGameWrapper: React.SFC<IManageGameWrapperProps> = ({
           </InputWrapper>
           <InputWrapper>
             <Input
-              placeholder="Enter Game Id"
+              placeholder="Enter Game Id To Join"
               value={joinGameId}
               onChange={handleJoinGameIdChange}
             />
@@ -51,8 +51,10 @@ const ManageGameWrapper: React.SFC<IManageGameWrapperProps> = ({
       <ButtonsWrapper>
         {!isInGame ? (
           <React.Fragment>
-            <Button onClick={createGame}>Create Game</Button>
-            <Button onClick={joinGame}>Join Game</Button>{' '}
+            {!joinGameId ? (
+              <Button onClick={createGame}>Create Game</Button>
+            ) : null}
+            {joinGameId ? <Button onClick={joinGame}>Join Game</Button> : null}
           </React.Fragment>
         ) : (
           <Button onClick={startGame}>Start Game</Button>
@@ -62,4 +64,4 @@ const ManageGameWrapper: React.SFC<IManageGameWrapperProps> = ({
   );
 };
 
-export { ManageGameWrapper };
+export default ManageGameWrapper;

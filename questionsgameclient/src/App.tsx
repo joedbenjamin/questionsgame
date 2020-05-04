@@ -1,14 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  QuestionWrapper,
-  QuestionsAnsweredWrapper,
-  QuestionMainWrapper,
-  QuestionsAnswered,
   GameWrapper,
-  Question,
-  AnswerWrapper,
-  AnswersWrapper,
-  AnswersWrapperRow,
   Horizontal,
   BottomWrapper,
   TimeRemaining,
@@ -16,16 +8,15 @@ import {
   Background,
   Game,
 } from './questions';
-import { Welcome } from './components/welcome';
-import { ManageGameWrapper } from './components/form';
-import { LeaderBoardComp } from './components/leaderboard';
-const ws = new WebSocket(`ws://localhost:8999/`);
+import Welcome from './components/welcome';
+import ManageGameWrapper from './components/form';
+import LeaderBoardComp from './components/leaderboard';
+import { LeaderBoardSection } from './components/leaderboard/styles';
+import Questions from './components/questions';
+import { decodeHTML } from './utils';
+import Answers from './components/answers';
 
-var decodeHTML = (html: string) => {
-  var el = document.createElement('textarea');
-  el.innerHTML = html;
-  return el.value;
-};
+const ws = new WebSocket(`ws://localhost:8999/`);
 
 const App = () => {
   const [gameId, setGameId] = useState('');
@@ -44,7 +35,44 @@ const App = () => {
     ws.onmessage = function (event) {
       // console.log(event);
       const data = JSON.parse(event.data);
-      console.log('data', data);
+
+      // if (data.method === 'create') {
+      //   setGameId(data.gameId);
+      //   setClients(data.clients);
+      //   setClientId(data.clientId);
+      //   setIsInGame(data.isInGame);
+      // }
+      // if (data.method === 'setClient') {
+      //   setClientId(data.clientId);
+      //   setIsInGame(data.isInGame);
+      // }
+      // if (data.method === 'updateClients') {
+      //   setGameId(data.gameId || gameId);
+      //   setClients(data.clients);
+      // }
+      // if (data.questionsAnswered) {
+      //   setAnsweredQuestions(data.questionsAnswered);
+      // }
+      // if (data.method === 'sendQuestion') {
+      //   setQuestion(data.question);
+      //   setQuestionId(data.questionId);
+      //   setCorrectAnswerId(undefined);
+      //   setAnswers(data.answers);
+      // }
+      // if (data.method === 'checkGuess') {
+      //   setCorrectAnswerId(data.correctAnswerId);
+      //   setAnsweredQuestions(data.questionsAnswered);
+      // }
+      //
+      // if (data.timeRemaining) {
+      //   setTimeRemaining(data.timeRemaining);
+      // }
+      //
+      // if (!!data.isInGame?.toString()) {
+      //   console.log('isinggame', data.isInGame);
+      //   setIsInGame(data.isInGame);
+      // }
+
       if (data.gameId) {
         setGameId(data.gameId);
       }
@@ -55,9 +83,6 @@ const App = () => {
 
       if (data.clients) {
         setClients(data.clients);
-        // const arry = data.clients.questionsAnswered || [];
-        // setAnsweredQuestions(new Array(20).fill(arry));
-        // console.log(data);
       }
 
       if (data.question) {
@@ -87,8 +112,13 @@ const App = () => {
         console.log('isinggame', data.isInGame);
         setIsInGame(data.isInGame);
       }
-    };
 
+      if (data.method === 'endGame') {
+        setGameId('-1');
+        setJoinGameId('');
+        setIsInGame(data.isInGame);
+      }
+    };
     ws.onopen = () => {
       // let obj = { method: 'create' };
       // ws.send(JSON.stringify(obj));
@@ -110,14 +140,6 @@ const App = () => {
     ws.send(JSON.stringify(obj));
   };
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setName(e.currentTarget.value);
-  };
-
-  const handleJoinGameIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setJoinGameId(e.currentTarget.value);
-  };
-
   const checkGuess = (e: any) => {
     var obj = {
       method: 'guess',
@@ -128,12 +150,12 @@ const App = () => {
     ws.send(JSON.stringify(obj));
   };
 
-  const getAnswerBackgroundColor = (answerId: string) => {
-    return !!!correctAnswerId
-      ? 'white'
-      : correctAnswerId === answerId
-      ? 'green'
-      : 'red';
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.currentTarget.value);
+  };
+
+  const handleJoinGameIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setJoinGameId(e.currentTarget.value);
   };
 
   return (
@@ -142,66 +164,39 @@ const App = () => {
       <Background>
         <Welcome name={name} />
         <GameWrapper>
-          <ManageGameWrapper
-            handleNameChange={handleNameChange}
-            name={name}
-            handleJoinGameIdChange={handleJoinGameIdChange}
-            joinGameId={joinGameId}
-            createGame={createGame}
-            joinGame={joinGame}
-            startGame={startGame}
-            isInGame={isInGame}
-          />
           <Game>
-            <LeaderBoardComp
-              visible={isInGame}
-              gameId={gameId}
-              clients={clients}
-              clientId={clientId}
+            <ManageGameWrapper
+              handleNameChange={handleNameChange}
+              name={name}
+              handleJoinGameIdChange={handleJoinGameIdChange}
+              joinGameId={joinGameId}
+              createGame={createGame}
+              joinGame={joinGame}
+              startGame={startGame}
+              isInGame={isInGame}
             />
+            <LeaderBoardSection>
+              <LeaderBoardComp
+                visible={!!gameId}
+                gameId={gameId}
+                clients={clients}
+                clientId={clientId}
+              />
+            </LeaderBoardSection>
             <Horizontal />
             <BottomWrapper timeRemaining={timeRemaining}>
               <TimeRemaining>
                 {timeRemaining < 0 ? '0' : timeRemaining}
               </TimeRemaining>
-              <QuestionWrapper>
-                <QuestionMainWrapper>
-                  <Question>{decodeHTML(question || '')}</Question>
-                </QuestionMainWrapper>
-                <QuestionsAnsweredWrapper>
-                  {answeredQuestions.map((q: any, index: number) => (
-                    <QuestionsAnswered
-                      key={index}
-                      mode={q === 1 ? 'correct' : q === 0 ? 'incorrect' : ''}
-                      count={answeredQuestions.length}
-                    />
-                  ))}
-                </QuestionsAnsweredWrapper>
-              </QuestionWrapper>
-              <AnswersWrapper>
-                <AnswersWrapperRow>
-                  {answers?.slice(0, 2).map((answer: any, index: number) => (
-                    <AnswerWrapper
-                      data-id={answer.id}
-                      key={answer.id}
-                      onClick={checkGuess}
-                      backgroundColor={getAnswerBackgroundColor(answer.id)}>
-                      <span>{decodeHTML(answer.text)}</span>
-                    </AnswerWrapper>
-                  ))}
-                </AnswersWrapperRow>
-                <AnswersWrapperRow>
-                  {answers?.slice(2, 4).map((answer: any, index: number) => (
-                    <AnswerWrapper
-                      data-id={answer.id}
-                      key={index}
-                      onClick={checkGuess}
-                      backgroundColor={getAnswerBackgroundColor(answer.id)}>
-                      <span>{decodeHTML(answer.text)}</span>
-                    </AnswerWrapper>
-                  ))}
-                </AnswersWrapperRow>
-              </AnswersWrapper>
+              <Questions
+                question={decodeHTML(question || '')}
+                answeredQuestions={answeredQuestions}
+              />
+              <Answers
+                checkGuess={checkGuess}
+                answers={answers}
+                correctAnswerId={correctAnswerId}
+              />
             </BottomWrapper>
           </Game>
         </GameWrapper>

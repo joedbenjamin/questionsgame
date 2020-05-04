@@ -9,20 +9,21 @@ export enum eRouteMethods {
 
 export interface IGame {
   id: string;
-  timer: number;
-  questions: IQuestion[];
-  clients: IClient[];
   currentQuestionId: string;
-  settings: ISettings;
+  done?: boolean;
   hasStarted: boolean;
+  timer: number;
+  clients: IClient[];
+  questions: IQuestion[];
+  settings: ISettings;
 }
 
 export interface IClient {
   id: string;
-  score: number;
   name: string;
-  ws?: WebSocket;
   questionsAnswered: number[];
+  score: number;
+  ws?: WebSocket;
 }
 
 export interface ISettings {

@@ -1,6 +1,6 @@
 import { IGame, eRouteMethods } from './types';
 import * as WebSocket from 'ws';
-import { isClientInGame, sendSocket, checkGuess } from './games/helper';
+import { isClientInGame, checkGuess } from './games/helper';
 import { createGame, joinGame, startGame } from './games/games';
 
 export const handleRoute = async (
@@ -19,8 +19,8 @@ export const handleRoute = async (
       await createGame(
         clientId,
         {
-          questionsCount: 3,
-          timePerQuestion: 2000,
+          questionsCount: 10,
+          timePerQuestion: 7000,
           timeBreakPerQuestion: 1500,
         },
         ws,
@@ -35,22 +35,6 @@ export const handleRoute = async (
     ) {
       const gameId = obj?.gameId;
       joinGame(games, gameId, clientId, obj?.name, ws);
-      games
-        .find((game) => game.id === gameId)
-        ?.clients.forEach((client) => {
-          sendSocket(
-            {
-              gameId: games.find((game) => game.id === gameId)?.id,
-              clients: games.find((game) => game.id === gameId)?.clients,
-            },
-            client?.ws,
-          );
-        });
-      ws.send(
-        JSON.stringify({
-          clientId,
-        }),
-      );
     }
 
     if (obj?.method === eRouteMethods.start) {

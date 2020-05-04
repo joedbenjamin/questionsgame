@@ -9,7 +9,8 @@ const flex_center = css`
 const InputsWrapper = styled.div`
   ${flex_center}
   flex-direction: column;
-  width: 80%;
+  width: 100%;
+  height: auto;
   margin-top: 2em;
 `;
 
@@ -54,7 +55,8 @@ const ButtonsWrapper = styled.div`
 `;
 
 const Button = styled.div`
-  width: 8em;
+  width: 40%;
+  max-width: 200px;
   height: 2em;
   background-color: brown;
   display: flex;

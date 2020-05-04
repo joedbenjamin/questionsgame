@@ -7,7 +7,12 @@ const GlobalStyles = createGlobalStyle`
     width: 100vw;
     height: 100vh;
     margin: 0;
-    font-size: 16px;
+    font-size: 12px;
+    transition: font-size 500ms;
+
+    @media(min-width: 768px) {
+      font-size: 16px;
+    }
   }
 `;
 
@@ -52,6 +57,8 @@ const GameWrapper = styled.div`
 const Game = styled.div`
   width: 100%;
   height: 100%;
+  justify-content: center;
+  align-items: center;
   z-index: 1;
 `;
 
@@ -60,62 +67,10 @@ const BottomWrapper: any = styled.div`
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  width: ${(props: any) => (props.timeRemaining >= 0 ? `90%` : `0`)};
+  width: ${(props: any) => (props.timeRemaining >= 0 ? `100%` : `0`)};
   opacity: ${(props: any) => (props.timeRemaining >= 0 ? `1` : `0`)};
   transition: width 200ms, opacity 200ms;
   overflow: hidden;
-`;
-
-const QuestionWrapper: any = styled.div`
-  width: 90%;
-  max-width: 37.5em;
-  height: 15em;
-  background-color: white;
-  border-radius: 0.9375em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-`;
-
-const QuestionMainWrapper = styled.div`
-  width: 95%;
-  height: 87%;
-  background-color: rgba(138, 43, 226, 0.4);
-  top: 3%;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const Question = styled.span`
-  color: rgb(75, 0, 130);
-  font-weight: bold;
-  font-size: 2.2em;
-  text-align: center;
-`;
-
-const QuestionsAnsweredWrapper = styled.div`
-  width: 95%;
-  height: 7%;
-  top: 4%;
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const QuestionsAnswered: any = styled.div`
-  width: ${(props: any) => 100 / props.count - 1}%;
-  height: 0.625em;
-  background-color: ${(props: any) =>
-    props.mode === 'correct'
-      ? 'green'
-      : props.mode === 'incorrect'
-      ? 'red'
-      : 'lightgrey'};
-  border-radius: 1.25em;
 `;
 
 const Horizontal: any = styled.div`
@@ -131,7 +86,16 @@ const QuestionsAndAnswersWrapper: any = styled.div`
   justify-content: center;
 `;
 
-const AnswersWrapper: any = styled(QuestionWrapper)`
+const AnswersWrapper: any = styled.div`
+  width: 90%;
+  max-width: 37.5em;
+  height: 15em;
+  background-color: white;
+  border-radius: 0.9375em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
   background: none;
   align-items: center;
   margin: 0.1em 0;
@@ -148,8 +112,8 @@ const AnswersWrapperRow: any = styled.div`
 `;
 
 const AnswerWrapper: any = styled.div`
-  min-width: 48%;
-  height: 2.5em;
+  width: 48%;
+  height: 3em;
   background-color: ${(props: any) => props.backgroundColor};
   border: 0.05em solid black;
   border-radius: 3.125em;
@@ -188,18 +152,13 @@ const CreateGameWrapper: any = styled.div`
 `;
 
 const TimeRemaining: any = styled.div`
-  font-size: 1em;
+  font-size: 2em;
   color: white;
   margin: 0.3em;
 `;
 
 export {
   GameWrapper,
-  QuestionsAnsweredWrapper,
-  QuestionWrapper,
-  QuestionMainWrapper,
-  QuestionsAnswered,
-  Question,
   AnswersWrapper,
   QuestionsAndAnswersWrapper,
   AnswerWrapper,

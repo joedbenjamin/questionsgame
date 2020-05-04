@@ -28,10 +28,12 @@ const WelcomeText = styled.span`
   font-size: 3em;
 `;
 
-export const Welcome: React.SFC<IWelcomeProps> = ({ name }) => {
+const Welcome: React.SFC<IWelcomeProps> = ({ name }) => {
   return name ? (
     <WelcomeWrapper>
       <WelcomeText>{name?.toLowerCase()[0]}</WelcomeText>
     </WelcomeWrapper>
   ) : null;
 };
+
+export default Welcome;

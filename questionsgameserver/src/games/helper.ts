@@ -22,7 +22,7 @@ const shuffle = (array: IAnswer[]): IAnswer[] => {
 const isClientInGame = (games: IGame[], clientId: string): boolean => {
   let isInGame = false;
   games.forEach((game: IGame) => {
-    if (!!game.clients.find((client) => client.id === clientId)) {
+    if (!game.done && !!game.clients.find((client) => client.id === clientId)) {
       isInGame = true;
     }
   });
@@ -47,7 +47,9 @@ const getAnswers = (answers: IGetAnswers): IAnswer[] => {
 
 const getQuestions = async (count: number): Promise<IQuestion[]> => {
   return await axios
-    .get(`https://opentdb.com/api.php?type=multiple&amount=${count}`)
+    .get(
+      `https://opentdb.com/api.php?type=multiple&amount=${count}&category=18`,
+    )
     .then(function (response: any) {
       return response.data.results.map((resp: any, index: number) => ({
         id: uuidv4(),
@@ -65,55 +67,70 @@ const getQuestions = async (count: number): Promise<IQuestion[]> => {
     });
 };
 
-const startTimer = (game: IGame, games: IGame[]) => {
+const endGame = (interval: NodeJS.Timeout, game: IGame) => {
+  clearInterval(interval);
+  game.done = true;
+
+  game.clients.forEach((client) =>
+    sendSocket(
+      {
+        method: 'endGame',
+        endGame: true,
+        isInGame: false,
+      },
+      client.ws,
+    ),
+  );
+  sendClients(game);
+};
+
+const updateQuestion = (game: IGame, index: number) => {
+  game.currentQuestionId = game.questions[index]?.id;
+  sendQuestion(game);
+  sendClients(game);
+};
+
+const sendTimeRemaining = (
+  time: number,
+  timePerQuestion: number,
+  game: IGame,
+) => {
+  game.clients.forEach((client) =>
+    sendSocket(
+      { timeRemaining: Math.ceil((timePerQuestion - time) / 1000).toFixed() },
+      client.ws,
+    ),
+  );
+};
+
+const startInterval = (game: IGame) => {
   let start = Date.now();
   let index = 0;
   sendQuestion(game);
+
   const interval = setInterval(() => {
     let time = Date.now() - start;
     const { timePerQuestion, timeBreakPerQuestion } = game.settings;
 
-    game.clients.forEach((client) =>
-      sendSocket(
-        {
-          timeRemaining: Math.ceil((timePerQuestion - time) / 1000).toFixed(),
-        },
-        client.ws,
-      ),
-    );
+    sendTimeRemaining(time, timePerQuestion, game);
 
     if (time >= timePerQuestion + timeBreakPerQuestion) {
       game.questions[index].done = true;
       index += 1;
+
+      game?.clients.forEach((client) => {
+        if (
+          !!!game.questions[index - 1].clientIdWhoAnswered.find(
+            (id) => id == client.id,
+          )
+        ) {
+          client.score -= 2;
+        }
+      });
       if (!!!game.questions[index]) {
-        clearInterval(interval);
-        games = games.filter((g) => g.id !== game.id);
-        console.log('last game ', games);
-        game.clients.forEach((client) =>
-          sendSocket(
-            {
-              clients: [],
-              isInGame: false,
-              gameId: '',
-            },
-            client.ws,
-          ),
-        );
+        endGame(interval, game);
       } else {
-        game?.clients.forEach((client) => {
-          if (
-            !!!game.questions[index - 1].clientIdWhoAnswered.find(
-              (id) => id == client.id,
-            )
-          ) {
-            client.score -= 2;
-          }
-        });
-        console.log('index', index);
-        game.currentQuestionId = game.questions[index]?.id;
-        sendQuestion(game);
-        sendClients(game);
-        console.log('current game ', game);
+        updateQuestion(game, index);
       }
       start = Date.now();
     }
@@ -134,6 +151,7 @@ const getCorrectAnswerId = (answers?: IAnswer[]) =>
 
 const getClientsToSend = (game?: IGame): any =>
   game?.clients && {
+    method: 'updateClients',
     clients: game.clients.map(({ id, name, score }) => ({
       id,
       name,
@@ -153,6 +171,7 @@ const sendQuestion = (game: IGame) => {
   game.clients.forEach((client) => {
     client.ws?.send(
       JSON.stringify({
+        method: 'sendQuestion',
         question: question?.text,
         questionId,
         answers: question?.answers.map((answer) => ({
@@ -195,6 +214,7 @@ const checkGuess = (
     }
     client?.ws?.send(
       JSON.stringify({
+        method: 'checkGuess',
         correctAnswerId,
         questionsAnswered: client?.questionsAnswered,
       }),
@@ -211,6 +231,6 @@ export {
   getQuestions,
   isClientInGame,
   sendSocket,
-  startTimer,
+  startInterval,
   checkGuess,
 };

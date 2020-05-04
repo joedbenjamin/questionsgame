@@ -9,6 +9,11 @@ const Wrapper: any = styled.div`
   align-items: center;
 `;
 
+const LeaderBoardSection: any = styled.div`
+  height: auto;
+  max-height: 20%;
+`;
+
 const LeaderBoardWrapper: any = styled.div`
   width: 90%;
   max-width: 37.5em;
@@ -75,4 +80,5 @@ export {
   LeaderBoard,
   GameIdWRapper,
   LeaderBoardWrapper,
+  LeaderBoardSection,
 };
