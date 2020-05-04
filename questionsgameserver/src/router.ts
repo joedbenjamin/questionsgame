@@ -15,7 +15,7 @@ export const handleRoute = async (
       obj?.method === eRouteMethods.create &&
       !isClientInGame(games, clientId)
     ) {
-      //the settings passed to create game can be used in a component to set the values from the front end
+      //hardcoding these for now but the settings can come from a react component or some other way instead of hardcoding
       await createGame(
         clientId,
         {
@@ -46,6 +46,7 @@ export const handleRoute = async (
       checkGuess(games, obj.gameId, clientId, obj.answerId, obj.questionId);
     }
   } catch (e) {
+    //need to clearly state the errors
     console.log('errors');
   }
 };
