@@ -1,7 +1,42 @@
 # Build a Triva Game using WebSockets with Typescript
 
-## Build the Server Code
+## the Server Code
 
+### package.json
+  * You could copy all the files and just run yarn or npm i to install all the packages or you could install them by running the following commands, using either yarn or npm ;-)
+
+  * Dependecies
+```
+yarn add axios, express, uuid, ws
+```
+```
+npm i axios, express, uuid, ws -S
+```
+  * Dev Dependecies
+```
+yarn add @types/axios, @types/node, @types/ramda, @types/express, @types/uuid, @types/ws, nodemon, ts-node, typescript -D
+```
+```
+npm i @types/axios, @types/node, @types/ramda, @types/express, @types/uuid, @types/ws, nodemon, ts-node, typescript -D
+```
+
+To start the server run...
+
+```
+yarn start:dev
+```
+```
+npm run start:dev
+```
+
+To build the code and transpile down to js run below but if you are on a windows machine, I think the build script will fail b/c of the _rm -rf build_ command, replace that with the windows command to remove the build folder or you could just remove it completely but that means you could have outdated files in your build folder 
+
+```
+yarn build
+```
+```
+npm run build
+```
 First, we will need to create some types but what will they be?
 
 <hr/>
