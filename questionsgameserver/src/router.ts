@@ -1,7 +1,7 @@
 import { IGame, eRouteMethods } from './types';
 import * as WebSocket from 'ws';
 import { isClientInGame, checkGuess } from './games/helper';
-import { createGame, joinGame, startGame } from './games/games';
+import { createGame, joinGame, startGame } from './games';
 
 export const handleRoute = async (
   message: string,
@@ -11,6 +11,7 @@ export const handleRoute = async (
 ) => {
   try {
     const obj = JSON.parse(message);
+    console.log(obj);
     if (
       obj?.method === eRouteMethods.create &&
       !isClientInGame(games, clientId)
@@ -47,6 +48,6 @@ export const handleRoute = async (
     }
   } catch (e) {
     //need to clearly state the errors
-    console.log('errors');
+    console.log('errors - ', e);
   }
 };

@@ -4,21 +4,22 @@
 
 First, we will need to create some types but what will they be?
 
+<hr/>
+
  * **IGame** - this is the main interface where other types will branch from
 
-       ```
-          export interface IGame {
-            id: string;
-            currentQuestionId: string;
-            done?: boolean;
-            hasStarted: boolean;
-            timer: number;
-            clients: IClient[];
-            questions: IQuestion[];
-            settings: ISettings;
-          }
-
-       ``` 
+```typescript
+  export interface IGame {
+    id: string;
+    currentQuestionId: string;
+    done?: boolean;
+    hasStarted: boolean;
+    timer: number;
+    clients: IClient[];
+    questions: IQuestion[];
+    settings: ISettings;
+  }
+```
 
    * **id** - a distinct identifier to represent each game
    * **currentQuestionId** - keeps track of the current question
@@ -28,20 +29,21 @@ First, we will need to create some types but what will they be?
    * **clients** - the person playing the game w/ other related info
    * **questions** - all the questions for the game with other related info
    * **settings** - settings related to the game
-       &nbsp;
+
+<hr/>
 
  * **IClient** - each person (computer, phone, etc) at the url of the game
 
-       ```
-          export interface IClient {
-            id: string;
-            name: string;
-            questionsAnswered?: eQuestionAnswered[];
-            score: number;
-            ws?: WebSocket;
-          }
 
-       ``` 
+```typescript
+  export interface IClient {
+    id: string;
+    name: string;
+    questionsAnswered?: eQuestionAnswered[];
+    score: number;
+    ws?: WebSocket;
+  }
+```
 
    * **id** - a distinct identifier to represent the client 
    * **name** - the display name of the client
@@ -51,22 +53,22 @@ First, we will need to create some types but what will they be?
      * -1 - not answered
    * **score** - the current score 
    * **ws** - the websocket for each client, which allows us to send data to the correct client
-       &nbsp;
+
+<hr/>
 
  * **IQuestion** - each question
 
-       ```
-          export interface IQuestion {
-            id: string;
-            seq: number;
-            text: string;
-            answers: IAnswer[];
-            done: boolean;
-            hasFirstCorrectAnswer: boolean;
-            clientIdsWhoAnswered: string[];
-          }
-
-       ```
+```typescript
+  export interface IQuestion {
+    id: string;
+    seq: number;
+    text: string;
+    answers: IAnswer[];
+    done: boolean;
+    hasFirstCorrectAnswer: boolean;
+    clientIdsWhoAnswered: string[];
+  }
+```
 
    * **id** - a distinct identifier to represent the question
    * **seq** - helps to keep the order of the questions
@@ -76,64 +78,65 @@ First, we will need to create some types but what will they be?
    * **hasFirstCorrectAnswer** - boolean value to know if the question has been answered correctly at least once
    * **clientIdsWhoAnswered** - list of clients who answered the question
 
-       &nbsp;
+<hr/>
 
  * **IAnswer** - each answer per question
 
-       ```
-          export interface IAnswer {
-            id: string;
-            text: string;
-            isCorrect: boolean;
-          }
-
-       ```
+```typescript
+  export interface IAnswer {
+    id: string;
+    text: string;
+    isCorrect: boolean;
+  }
+```
 
    * **id** - a distinct identifier to represent the answer
    * **text** - display text
    * **isCorrect** - boolean value to know if answer is correct
 
-       &nbsp;
+<hr/>
 
  * **ISettings** - settings for the game
 
-       ```
-          export interface ISettings {
-            questionsCount: number;
-            timePerQuestion: number;
-            timeBreakPerQuestion: number;
-          }
-
-       ```
+```typescript
+  export interface ISettings {
+    questionsCount: number;
+    timePerQuestion: number;
+    timeBreakPerQuestion: number;
+  }
+```
 
    * **questionsCount** - how many questions per game
    * **timePerQuestion** - the amount of time to answer each question
    * **timeBreakPerQuestion** - the amount of time to break before the next question loads
 
-       &nbsp;
+<hr/>
 
 ## server.ts - entry point for websocket
   * has a games variable that is used to store all games data - this could be stored in a database or some sort but doing everything here for now
   * once a connection is established, get a unique key for the client and set it as it's id 
 
-      ```
-        const clientId = req.headers['sec-websocket-key'];
-        ws.id = clientId;
+```typescript
+  const clientId = req.headers['sec-websocket-key'];
+  ws.id = clientId;
+```
 
-      ```
   * listen for all messages and send to the handleRoute method in the router.ts file 
 
-      ```
-        ws.on('message', async (message: string) => {
-          await handleRoute(message, games, clientId, ws);
-        });
-
-      ```
+```typescript
+  ws.on('message', async (message: string) => {
+    await handleRoute(message, games, clientId, ws);
+  });
+```
+<hr/>
 
 ## router.ts - routes the work to be done to the correct methods
 
-  * First we parse the message into json with `const obj = JSON.parse(message);`
-  * check for the following methods:
+  * First we parse the message into json with 
+      ```typescript
+      const obj = JSON.parse(message);
+      ```
+  * check the message property for the following
     * create - creates the game to be played
       * only create game if client is not already in a game
     * join - allows a client to join a created game
@@ -141,3 +144,422 @@ First, we will need to create some types but what will they be?
     * start - starts the game
     * guess - checks the answered question in a game
 
+<hr/>
+
+## games/index.ts - routes are sent here to do the all the work - Let's go down the rabbit hole and discuss - might need a coffee break after this...
+
+### methods
+
+* **CreateGame**
+
+  * Creates all the data needed for a game, add that game to the list of games array and sends back the game object to the client who created it
+
+```typescript
+export const createGame = async (
+  clientId: string,
+  settings: ISettings,
+  ws: WebSocket,
+  name: string,
+  games: IGame[],
+) => {
+  const questions = await getQuestions(settings.questionsCount);
+  const game = {
+    settings: settings,
+    id: uuidv4(),
+    timer: settings.timePerQuestion,
+    clients: [
+      {
+        id: clientId,
+        name,
+        score: 0,
+        ws,
+        //creates a new list with the length being the questionsCount
+        //all items in the list are defaulted being not answered
+        questionsAnswered: new Array(settings.questionsCount).fill(
+          eQuestionAnswered.notAnswered,
+        ),
+      },
+    ],
+    questions,
+    currentQuestionId: questions[0].id,
+    hasStarted: false,
+  };
+  games.push(game);
+  sendSocket(
+    {
+      method: eRouteMethods.create,
+      gameId: game.id,
+      clients: game.clients,
+      clientId,
+      isInGame: true,
+    },
+    ws,
+  );
+};
+```
+
+ * First, we wait for the async **getQuestions** method
+   * send isLoading to client to let client know to display loading gif
+   * call the opentdb endpoint to get the questions
+   * id - use uuidv4 to get a unique identifier
+   * seq - iterates the seq, starting at 1
+   * answers - calls the getAnswers to build the data for all the answers
+   * text - sets the display text of the question
+   * clientIdsWhoAnswered - use to store all clients who answered the question - This is used in the score calcualtion which we will discuss later
+   * if there an error, send it to the client
+   * once result comes back, send isLoading as false to client
+
+
+```typescript
+const getQuestions = async (
+  count: number,
+  ws: WebSocket,
+): Promise<IQuestion[]> => {
+  sendSocket({ method: eRouteMethods.create, isLoading: true }, ws);
+  const result = await axios
+    .get(
+      `https://opentdb.com/api.php?type=multiple&amount=${count}&category=18`,
+    )
+    .then(function (response: any) {
+      return response.data.results.map((resp: any, index: number) => ({
+        id: uuidv4(),
+        seq: ++index,
+        answers: getAnswers({
+          correctAnswer: resp.correct_answer,
+          incorrectAnswers: resp.incorrect_answers,
+        }),
+        text: resp.question,
+        clientIdsWhoAnswered: [],
+      }));
+    })
+    .catch(() => {
+      sendSocket(
+        {
+          method: eRouteMethods.create,
+          error: 'api is down, try back later',
+          isLoading: false,
+        },
+        ws,
+      );
+      throw 'api is down';
+    });
+  sendSocket({ method: eRouteMethods.create, isLoading: false }, ws);
+  return result;
+};
+```
+
+ * The **getAnswers** method is called from the getQuestions method
+   * sets the correct answer object and incorrect answers list of objects and returns a shuffled list of answers for randomness in position
+     * id - unique identifier for each answer
+     * text - display text of the answer
+     * isCorrect - boolean value to know if answer is correct or not
+
+```typescript
+const getAnswers = (answers: IGetAnswers): IAnswer[] => {
+  const correctAnswer: IAnswer = {
+    id: uuidv4(),
+    text: answers.correctAnswer,
+    isCorrect: true,
+  };
+  const incorrectAnswers: IAnswer[] = answers.incorrectAnswers.map(
+    (answer: any) => ({
+      id: uuidv4(),
+      text: answer,
+      isCorrect: false,
+    }),
+  );
+  return shuffle([correctAnswer, ...incorrectAnswers]);
+};
+```
+
+ * The **shuffle** method is used to randomize the answers position
+   * goes through the array
+   * sets j to Math.floor of the random number at each index of interation
+   * sets the temp to be the value at the current index
+   * then, replaces the index with the new random one
+   * then, sets the index of j to what temp was
+   * things to know, doing it this way may cause some interations to switch values that has already been switched but that is ok - this seems to be the best approach to have this fully randomized
+
+```typescript
+const shuffle = (array: IAnswer[]): IAnswer[] => {
+  array.forEach((el: any, index: number) => {
+    const j = Math.floor(Math.random() * index);
+    const temp = el;
+    array[index] = array[j];
+    array[j] = temp;
+  });
+  return array;
+};
+```
+<hr/>
+
+* **JoinGame**
+
+  * put a client in a game that has already been created but not yet started
+    * gets the game by id
+    * adds the client to the game
+    * timer - time per question
+    * send response back to client with the clientid as well as the isInGame flag
+    * send response to all clients in the game with gameId and list of clients in the game
+
+```typescript
+export const joinGame = (
+  games: IGame[],
+  gameId: string,
+  clientId: string,
+  name: string,
+  ws: WebSocket,
+) => {
+  const game = gameById(gameId, games);
+  game?.clients.push({
+    id: clientId,
+    name,
+    score: 0,
+    ws,
+    questionsAnswered: new Array(game.settings.questionsCount).fill(
+      eQuestionAnswered.notAnswered,
+    ),
+  });
+  sendSocket({ method: 'setClient', clientId, isInGame: true }, ws);
+  game?.clients.forEach((client) => {
+    sendSocket(
+      {
+        method: 'updateClients',
+        clients: game?.clients,
+      },
+      client?.ws,
+    );
+  });
+};
+```
+
+<hr/>
+
+* **Start Game**
+
+  * this is where the fun will start - key word **start** - ok, not really funny but this is where a lot of the logic is - let's get to it!!!
+    * if game has not started, then set hasStarted to true
+    * calls startInterval which is really where the fun starts (i'm serious this time!!!) 
+
+```typescript
+export const startGame = (games: IGame[], gameId: string) => {
+  const game = gameById(gameId, games);
+  if (game && !game.hasStarted) {
+    game.hasStarted = true;
+    startInterval(game);
+  }
+};
+```
+
+* **Start Interval**
+
+  * sends the first question to the clients
+  * creates an interval that runs every 500ms
+  * What happens in each cycle???
+    * set the time varialbe which allows us to keep track of the timer 
+    ```typescript
+      let time = Date.now() - start;
+    ```
+    * send the remaining time for the question to each client
+    * if time has ran out do the following
+      * set the question to done
+      * if any clients did not answer - take away 2 points (this could be a value in the settings)
+      * if there are no more questions, end the game
+      * if there are more questions, send the next question
+      * update start variable which allows the time variable to go off the right start time when the cycle starts again
+    ```typescript
+      start = Date.now();
+    ```
+
+```typescript
+const startInterval = (game: IGame) => {
+  let start = Date.now();
+  let index = 0;
+  sendQuestion(game);
+  const { timePerQuestion, timeBreakPerQuestion } = game.settings;
+
+  const interval = setInterval(() => {
+    let time = Date.now() - start;
+
+    sendTimeRemaining(time, timePerQuestion, game);
+
+    if (time >= timePerQuestion + timeBreakPerQuestion) {
+      game.questions[index].done = true;
+      index += 1;
+
+      game?.clients.forEach((client) => {
+        if (
+          !!!game.questions[index - 1].clientIdsWhoAnswered.find(
+            (id) => id == client.id,
+          )
+        ) {
+          client.score -= 2;
+        }
+      });
+      if (!!!game.questions[index]) {
+        endGame(interval, game);
+      } else {
+        updateQuestion(game, index);
+      }
+      start = Date.now();
+    }
+  }, 500);
+};
+```
+
+* **Send Question**
+
+  * get the current question id
+  * get the question by the question id
+  * send all the clients in the game the following
+    * method - sendQuestion
+    * question - the display text of the question
+    * questionId
+    * answers - the answers for the questions with the id and text props
+
+```typescript
+const sendQuestion = (game: IGame) => {
+  const questionId = game.currentQuestionId;
+  const question = questionById(questionId, game.questions);
+
+  game.clients.forEach((client) => {
+    client.ws?.send(
+      JSON.stringify({
+        method: 'sendQuestion',
+        question: question?.text,
+        questionId,
+        answers: question?.answers.map((answer) => ({
+          id: answer.id,
+          text: answer.text,
+        })),
+      }),
+    );
+  });
+};
+```
+
+* **Send Time Remaining**
+
+  * sends each client the time remaining for the question
+    * this allows the front end code to display the timer
+    * taking the timerPerQuestion - time will give us how much time is remaining in milliseconds
+    * we then take that and divide by 1000 to get the time in seconds
+    * Math.ceil is used to make sure we get the rounded up number
+    * toFixed() with no params is added to get rid of the decimals
+
+```typescript
+const sendTimeRemaining = (
+  time: number,
+  timePerQuestion: number,
+  game: IGame,
+) => {
+  game.clients.forEach((client) =>
+    sendSocket(
+      { timeRemaining: Math.ceil((timePerQuestion - time) / 1000).toFixed() },
+      client.ws,
+    ),
+  );
+};
+```
+
+* **End Game**
+
+  * clear the interval to stop the timer from running
+  * set the game to done
+  * send all clients the following
+    * method - endGame
+    * endGame - send as true to let client know the game is over
+    * isInGame - set to false
+  * send all clients the updated game, basically making sure they have the correct final score
+
+```typescript
+const endGame = (interval: NodeJS.Timeout, game: IGame) => {
+  clearInterval(interval);
+  game.done = true;
+
+  game.clients.forEach((client) =>
+    sendSocket(
+      {
+        method: 'endGame',
+        endGame: true,
+        isInGame: false,
+      },
+      client.ws,
+    ),
+  );
+  sendClients(game);
+};
+```
+
+* **Update Question**
+
+  * set current question id
+  * send question to clients
+  * send all clients the updated game
+
+```typescript
+const updateQuestion = (game: IGame, index: number) => {
+  game.currentQuestionId = game.questions[index]?.id;
+  sendQuestion(game);
+  sendClients(game);
+};
+```
+
+<hr/>
+
+* **Check Guess**
+
+  * get the game by id
+  * get the question by id
+  * get the client by id
+  * get the correct answer's id
+  * if client has not already answered the question do the following
+    * add the clientId to the clientIdsWhoAnswered array so we will know the client has answered if they try and answer again
+    * if the answer is correct do the following
+      * give the client an extra point for answering question correctly
+      * set the questionsAnswered index to 1 - meaning answered correctly
+      * if no client has answered the question correctly yet do the following
+        * set the hasFirstCorrectAnswer to true, so we will know someone has answered the question correctly
+        * give the client a bonus for being the first to answer the question correctly
+    * if the answer is incorrect do the following
+      * take away a point from the client for getting the wrong answer
+      * set the questionsAnswered index to 0 - meaning answered incorrectly
+      * send back the correctAnswerId and questionsAnswered array to the client
+
+```typescript
+const checkGuess = (
+  games: IGame[],
+  gameId: string,
+  clientId: string,
+  answerId: string,
+  questionId: string,
+) => {
+  const game = gameById(gameId, games);
+  const question = questionById(questionId, game?.questions);
+  const client = clientById(clientId, game?.clients);
+  const correctAnswerId = getCorrectAnswerId(question?.answers);
+
+  if (client && question && !hasClientAnsweredQuestion(clientId, question)) {
+    question.clientIdsWhoAnswered.push(clientId);
+    if (answerId === correctAnswerId) {
+      client.score += 1;
+      client.questionsAnswered[question.seq - 1] = 1;
+      if (!question.hasFirstCorrectAnswer) {
+        question.hasFirstCorrectAnswer = true;
+        //if first to get right, gets bonus of # of players excluding self
+        client.score += (game?.clients.length || 1) - 1;
+      }
+    } else {
+      client.score -= 1;
+      client.questionsAnswered[question.seq - 1] = 0;
+    }
+    client?.ws?.send(
+      JSON.stringify({
+        method: 'checkGuess',
+        correctAnswerId,
+        questionsAnswered: client?.questionsAnswered,
+      }),
+    );
+  }
+};
+```

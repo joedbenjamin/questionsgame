@@ -7,6 +7,7 @@ import {
   GlobalStyles,
   Background,
   Game,
+  Loading,
 } from './questions';
 import Welcome from './components/welcome';
 import ManageGameWrapper from './components/form';
@@ -15,6 +16,7 @@ import { LeaderBoardSection } from './components/leaderboard/styles';
 import Questions from './components/questions';
 import { decodeHTML } from './utils';
 import Answers from './components/answers';
+import Errors from './components/errors';
 
 const ws = new WebSocket(`ws://localhost:8999/`);
 
@@ -31,6 +33,8 @@ const App = () => {
   const [clientId, setClientId]: any = useState('');
   const [timeRemaining, setTimeRemaining]: any = useState(-1);
   const [isInGame, setIsInGame]: any = useState(false);
+  const [serverError, setServerError]: any = useState(false);
+  const [isLoading, setIsLoading]: any = useState(false);
   useEffect(() => {
     ws.onmessage = function (event) {
       // console.log(event);
@@ -72,6 +76,14 @@ const App = () => {
       //   console.log('isinggame', data.isInGame);
       //   setIsInGame(data.isInGame);
       // }
+      //
+
+      if (data.method === 'create') {
+        setIsLoading(data.isLoading);
+        if (data.error) {
+          setServerError(data.error);
+        }
+      }
 
       if (data.gameId) {
         setGameId(data.gameId);
@@ -161,6 +173,8 @@ const App = () => {
   return (
     <React.Fragment>
       <GlobalStyles />
+      <Loading isLoading={isLoading} />
+      {/* <Errors /> */}
       <Background>
         <Welcome name={name} />
         <GameWrapper>

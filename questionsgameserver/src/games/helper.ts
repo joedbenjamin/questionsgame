@@ -1,4 +1,4 @@
-import { IGame, IQuestion, IAnswer, IClient } from '../types';
+import { IGame, IQuestion, IAnswer, IClient, eRouteMethods } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 
@@ -45,8 +45,12 @@ const getAnswers = (answers: IGetAnswers): IAnswer[] => {
   return shuffle([correctAnswer, ...incorrectAnswers]);
 };
 
-const getQuestions = async (count: number): Promise<IQuestion[]> => {
-  return await axios
+const getQuestions = async (
+  count: number,
+  ws: WebSocket,
+): Promise<IQuestion[]> => {
+  sendSocket({ method: eRouteMethods.create, isLoading: true }, ws);
+  const result = await axios
     .get(
       `https://opentdb.com/api.php?type=multiple&amount=${count}&category=18`,
     )
@@ -63,8 +67,18 @@ const getQuestions = async (count: number): Promise<IQuestion[]> => {
       }));
     })
     .catch(() => {
-      return [];
+      sendSocket(
+        {
+          method: eRouteMethods.create,
+          error: 'api is down, try back later',
+          isLoading: false,
+        },
+        ws,
+      );
+      throw 'api is down';
     });
+  sendSocket({ method: eRouteMethods.create, isLoading: false }, ws);
+  return result;
 };
 
 const endGame = (interval: NodeJS.Timeout, game: IGame) => {
@@ -107,10 +121,10 @@ const startInterval = (game: IGame) => {
   let start = Date.now();
   let index = 0;
   sendQuestion(game);
+  const { timePerQuestion, timeBreakPerQuestion } = game.settings;
 
   const interval = setInterval(() => {
     let time = Date.now() - start;
-    const { timePerQuestion, timeBreakPerQuestion } = game.settings;
 
     sendTimeRemaining(time, timePerQuestion, game);
 
@@ -201,13 +215,13 @@ const checkGuess = (
   if (client && question && !hasClientAnsweredQuestion(clientId, question)) {
     question.clientIdsWhoAnswered.push(clientId);
     if (answerId === correctAnswerId) {
-      if (!question.hasFirstCorrectAnswer) {
-        question.hasFirstCorrectAnswer = true;
-        //if first to get right, gets bonus of # of players excluding yourself
-        client.score += (game?.clients.length || 1) - 1;
-      }
       client.score += 1;
       client.questionsAnswered[question.seq - 1] = 1;
+      if (!question.hasFirstCorrectAnswer) {
+        question.hasFirstCorrectAnswer = true;
+        //if first to get right, gets bonus of # of players excluding self
+        client.score += (game?.clients.length || 1) - 1;
+      }
     } else {
       client.score -= 1;
       client.questionsAnswered[question.seq - 1] = 0;

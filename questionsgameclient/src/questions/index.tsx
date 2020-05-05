@@ -1,5 +1,6 @@
 import styled, { createGlobalStyle, css } from 'styled-components';
 import imgBg from '../bg6.jpg';
+import loadingGif from '../lg.gif';
 
 const GlobalStyles = createGlobalStyle`
   html, body {
@@ -14,6 +15,23 @@ const GlobalStyles = createGlobalStyle`
       font-size: 16px;
     }
   }
+`;
+interface ILoading {
+  isLoading: boolean;
+}
+export const Loading = styled.div<ILoading>`
+  width: ${(props) => (props.isLoading ? '100%' : '0')};
+  opacity: ${(props) => (props.isLoading ? '1' : '0')};
+  height: 100%;
+  position: absolute;
+  margin: 0 auto;
+  z-index: 20;
+  background-color: rgba(0, 0, 0, 0.8);
+  background-image: url(${loadingGif});
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 3em 3em;
+  transition: width 500ms, opacity 500ms;
 `;
 
 const bg_stuff = css`

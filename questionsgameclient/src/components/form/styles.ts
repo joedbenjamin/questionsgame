@@ -71,7 +71,10 @@ const Button = styled.div`
   &:hover {
     cursor: pointer;
   }
+
+  &:active {
+    background-color: rgba(155, 0, 0, 0.5);
+  }
 `;
 
 export { Input, InputsWrapper, InputWrapper, Button, ButtonsWrapper };
-
