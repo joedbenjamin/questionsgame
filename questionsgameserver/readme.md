@@ -3,7 +3,7 @@
 ## the Server Code
 
 ### package.json
-  * You could copy all the files and just run yarn or npm i to install all the packages or you could install them by running the following commands, using either yarn or npm ;-)
+  * You could clone all the files and just run yarn or npm i to install all the packages or you could install them by running the following commands, using either yarn or npm ;-)
 
   * Dependecies
 ```
@@ -37,7 +37,7 @@ yarn build
 ```
 npm run build
 ```
-First, we will need to create some types but what will they be?
+Now that we have that out the way - let's get to the fun stuff (the code) - we will start with the types
 
 <hr/>
 
