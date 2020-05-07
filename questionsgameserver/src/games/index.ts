@@ -52,34 +52,46 @@ export const joinGame = (
   ws: WebSocket,
 ) => {
   const game = gameById(gameId, games);
-  game?.clients.push({
-    id: clientId,
-    name,
-    score: 0,
-    ws,
-    questionsAnswered: new Array(game.settings.questionsCount).fill(
-      eQuestionAnswered.notAnswered,
-    ),
-  });
-  sendSocket(
-    { method: 'setClient', clientId, isInGame: true, gameId: game?.id },
-    ws,
-  );
-  game?.clients.forEach((client) => {
+  if (game && !game.hasStarted) {
+    game?.clients.push({
+      id: clientId,
+      name,
+      score: 0,
+      ws,
+      questionsAnswered: new Array(game.settings.questionsCount).fill(
+        eQuestionAnswered.notAnswered,
+      ),
+    });
     sendSocket(
-      {
-        method: 'updateClients',
-        clients: game?.clients,
-      },
-      client?.ws,
+      { method: 'setClient', clientId, isInGame: true, gameId: game?.id },
+      ws,
     );
-  });
+    game?.clients.forEach((client) => {
+      sendSocket(
+        {
+          method: 'updateClients',
+          clients: game?.clients,
+        },
+        client?.ws,
+      );
+    });
+  }
 };
 
 export const startGame = (games: IGame[], gameId: string) => {
   const game = gameById(gameId, games);
   if (game && !game.hasStarted) {
     game.hasStarted = true;
+    game?.clients.forEach((client) => {
+      sendSocket(
+        {
+          questionsAnswered: new Array(game.settings.questionsCount).fill(
+            eQuestionAnswered.notAnswered,
+          ),
+        },
+        client?.ws,
+      );
+    });
     startInterval(game);
   }
 };

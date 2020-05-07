@@ -17,9 +17,17 @@ import Questions from './components/questions';
 import { decodeHTML } from './utils';
 import Answers from './components/answers';
 import Errors from './components/errors';
+import useForm from './components/form/useForm';
+// import { FormContext } from './components/form';
 
-const ws = new WebSocket(`ws://localhost:8999/`);
+const getWebSocketURL: any = () =>
+  process.env.NODE_ENV === 'production'
+    ? process.env.REACT_APP_PROD_WEBSOCKETS_URL
+    : process.env.REACT_APP_DEV_WEBSOCKETS_URL;
 
+const ws = new WebSocket(getWebSocketURL());
+
+export const FormContext = React.createContext<any>({});
 const App = () => {
   const [gameId, setGameId] = useState('');
   const [joinGameId, setJoinGameId] = useState('');
@@ -35,6 +43,14 @@ const App = () => {
   const [isInGame, setIsInGame]: any = useState(false);
   const [serverError, setServerError]: any = useState(false);
   const [isLoading, setIsLoading]: any = useState(false);
+  const [secondsPerQuestion, setSecondsPerQuestion] = useState(10);
+  const [numberOfQuestions, setNumberOfQuestions] = useState(15);
+  const { inputValues, handleOnChange } = useForm({
+    name: '',
+    joinGameId: '',
+    numberOfQuestions: 10,
+    secondsPerQuestion: 15,
+  });
   useEffect(() => {
     ws.onmessage = function (event) {
       // console.log(event);
@@ -132,13 +148,14 @@ const App = () => {
       }
     };
     ws.onopen = () => {
+      ws.send(JSON.stringify({ method: 'connecting' }));
       // let obj = { method: 'create' };
       // ws.send(JSON.stringify(obj));
     };
   }, []);
 
   const createGame = () => {
-    let obj = { method: 'create', name };
+    let obj = { method: 'create', name, numberOfQuestions, secondsPerQuestion };
     ws.send(JSON.stringify(obj));
   };
 
@@ -170,51 +187,56 @@ const App = () => {
     setJoinGameId(e.currentTarget.value);
   };
 
+  const handleSecondsPerQuestionChange = (value: any) => {
+    setSecondsPerQuestion(value);
+  };
+
+  const handleNumberOfQuestionsChange = (value: any) => {
+    setNumberOfQuestions(value);
+  };
   return (
     <React.Fragment>
-      <GlobalStyles />
-      <Loading isLoading={isLoading} />
-      {/* <Errors /> */}
-      <Background>
-        <Welcome name={name} />
-        <GameWrapper>
-          <Game>
-            <ManageGameWrapper
-              handleNameChange={handleNameChange}
-              name={name}
-              handleJoinGameIdChange={handleJoinGameIdChange}
-              joinGameId={joinGameId}
-              createGame={createGame}
-              joinGame={joinGame}
-              startGame={startGame}
-              isInGame={isInGame}
-            />
-            <LeaderBoardSection>
-              <LeaderBoardComp
-                visible={!!gameId}
-                gameId={gameId}
-                clients={clients}
-                clientId={clientId}
+      <FormContext.Provider value={{ inputValues, handleOnChange }}>
+        <GlobalStyles />
+        <Loading isLoading={isLoading} />
+        {/* <Errors /> */}
+        <Background>
+          <Welcome />
+          <GameWrapper>
+            <Game>
+              <ManageGameWrapper
+                createGame={createGame}
+                joinGame={joinGame}
+                startGame={startGame}
+                isInGame={isInGame}
               />
-            </LeaderBoardSection>
-            <Horizontal />
-            <BottomWrapper timeRemaining={timeRemaining}>
-              <TimeRemaining>
-                {timeRemaining < 0 ? '0' : timeRemaining}
-              </TimeRemaining>
-              <Questions
-                question={decodeHTML(question || '')}
-                answeredQuestions={answeredQuestions}
-              />
-              <Answers
-                checkGuess={checkGuess}
-                answers={answers}
-                correctAnswerId={correctAnswerId}
-              />
-            </BottomWrapper>
-          </Game>
-        </GameWrapper>
-      </Background>
+              <LeaderBoardSection>
+                <LeaderBoardComp
+                  visible={!!gameId}
+                  gameId={gameId}
+                  clients={clients}
+                  clientId={clientId}
+                />
+              </LeaderBoardSection>
+              <Horizontal />
+              <BottomWrapper timeRemaining={timeRemaining}>
+                <TimeRemaining>
+                  {timeRemaining < 0 ? '0' : timeRemaining}
+                </TimeRemaining>
+                <Questions
+                  question={decodeHTML(question || '')}
+                  answeredQuestions={answeredQuestions}
+                />
+                <Answers
+                  checkGuess={checkGuess}
+                  answers={answers}
+                  correctAnswerId={correctAnswerId}
+                />
+              </BottomWrapper>
+            </Game>
+          </GameWrapper>
+        </Background>
+      </FormContext.Provider>
     </React.Fragment>
   );
 };

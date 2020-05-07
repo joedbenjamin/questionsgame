@@ -1,5 +1,7 @@
 import * as React from 'react';
 import styled from 'styled-components';
+import { useContext } from 'react';
+import {FormContext} from '../../App';
 
 interface IWelcomeProps {
   name: string;
@@ -28,10 +30,11 @@ const WelcomeText = styled.span`
   font-size: 3em;
 `;
 
-const Welcome: React.SFC<IWelcomeProps> = ({ name }) => {
-  return name ? (
+const Welcome: React.SFC = () => {
+  const {inputValues} = useContext(FormContext);
+  return inputValues.name ? (
     <WelcomeWrapper>
-      <WelcomeText>{name?.toLowerCase()[0]}</WelcomeText>
+      <WelcomeText>{inputValues.name?.toLowerCase()[0]}</WelcomeText>
     </WelcomeWrapper>
   ) : null;
 };

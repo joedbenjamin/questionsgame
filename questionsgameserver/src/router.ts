@@ -20,8 +20,8 @@ export const handleRoute = async (
       await createGame(
         clientId,
         {
-          questionsCount: 10,
-          timePerQuestion: 7000,
+          questionsCount: obj?.numberOfQuestions,
+          timePerQuestion: obj?.secondsPerQuestion * 1000,
           timeBreakPerQuestion: 1500,
         },
         ws,

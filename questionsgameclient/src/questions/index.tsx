@@ -20,17 +20,16 @@ interface ILoading {
   isLoading: boolean;
 }
 export const Loading = styled.div<ILoading>`
-  width: ${(props) => (props.isLoading ? '100%' : '0')};
-  opacity: ${(props) => (props.isLoading ? '1' : '0')};
+  width: 100%;
   height: 100%;
   position: absolute;
   margin: 0 auto;
   z-index: 20;
-  background-color: rgba(0, 0, 0, 0.8);
   background-image: url(${loadingGif});
   background-repeat: no-repeat;
   background-position: center;
   background-size: 3em 3em;
+  display: ${(props) => (props.isLoading ? 'initial' : 'none')};
   transition: width 500ms, opacity 500ms;
 `;
 
@@ -68,7 +67,7 @@ const GameWrapper = styled.div`
     ${bg_stuff}
     content: '';
     position: absolute;
-    filter: blur(1.2em) brightness(1.1);
+    filter: blur(1.1em) brightness(.65);
   }
 `;
 
@@ -77,6 +76,7 @@ const Game = styled.div`
   height: 100%;
   justify-content: center;
   align-items: center;
+  overflow: auto;
   z-index: 1;
 `;
 
@@ -85,9 +85,11 @@ const BottomWrapper: any = styled.div`
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  width: ${(props: any) => (props.timeRemaining >= 0 ? `100%` : `0`)};
+  width: 100%;
   opacity: ${(props: any) => (props.timeRemaining >= 0 ? `1` : `0`)};
-  transition: width 200ms, opacity 200ms;
+  transform: ${(props: any) =>
+    props.timeRemaining >= 0 ? `scale(1)` : `scale(0)`};
+  transition: scale 900ms, opacity 900ms;
   overflow: hidden;
 `;
 

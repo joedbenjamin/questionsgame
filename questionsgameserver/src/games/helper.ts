@@ -1,6 +1,7 @@
 import { IGame, IQuestion, IAnswer, IClient, eRouteMethods } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
+import questionsJson from '../questions';
 
 import * as WebSocket from 'ws';
 
@@ -9,12 +10,17 @@ interface IGetAnswers {
   incorrectAnswers: string[];
 }
 
-const shuffle = (array: IAnswer[]): IAnswer[] => {
-  array.forEach((el: any, index: number) => {
-    const j = Math.floor(Math.random() * index);
-    const temp = el;
-    array[index] = array[j];
-    array[j] = temp;
+const shuffle = (array: any[], times: number = 3): any[] => {
+  new Array(times).fill(1).forEach(() => {
+    array.forEach((el: any, index: number) => {
+      const j = Math.floor(Math.random() * index);
+      const temp = el;
+      array[index] = array[j];
+      array[j] = temp;
+    });
+    if (Math.ceil(Math.random() * 100) % 2 > 0) {
+      array = array.reverse();
+    }
   });
   return array;
 };
@@ -50,33 +56,26 @@ const getQuestions = async (
   ws: WebSocket,
 ): Promise<IQuestion[]> => {
   sendSocket({ method: eRouteMethods.create, isLoading: true }, ws);
-  const result = await axios
-    .get(
-      `https://opentdb.com/api.php?type=multiple&amount=${count}&category=18`,
-    )
+  const questions = await axios
+    .get(`https://opentdb.com/api.php?type=multiple&amount=${100}`, {
+      timeout: 2000,
+    })
     .then(function (response: any) {
-      return response.data.results.map((resp: any, index: number) => ({
-        id: uuidv4(),
-        seq: ++index,
-        answers: getAnswers({
-          correctAnswer: resp.correct_answer,
-          incorrectAnswers: resp.incorrect_answers,
-        }),
-        text: resp.question,
-        clientIdsWhoAnswered: [],
-      }));
+      return shuffle(response.data.results, 2).slice(0, count);
     })
     .catch(() => {
-      sendSocket(
-        {
-          method: eRouteMethods.create,
-          error: 'api is down, try back later',
-          isLoading: false,
-        },
-        ws,
-      );
-      throw 'api is down';
+      return shuffle(questionsJson(), 2).slice(0, count);
     });
+  const result: any = questions.map((resp: any, index: number) => ({
+    id: uuidv4(),
+    seq: ++index,
+    answers: getAnswers({
+      correctAnswer: resp.correct_answer,
+      incorrectAnswers: resp.incorrect_answers,
+    }),
+    text: resp.question,
+    clientIdsWhoAnswered: [],
+  }));
   sendSocket({ method: eRouteMethods.create, isLoading: false }, ws);
   return result;
 };

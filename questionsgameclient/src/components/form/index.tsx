@@ -1,17 +1,12 @@
-import React from 'react';
-import {
-  InputsWrapper,
-  InputWrapper,
-  Input,
-  ButtonsWrapper,
-  Button,
-} from './styles';
+import React, { useContext } from 'react';
+import { useStyles } from './styles';
+import { SliderWrapper } from './slider';
+import { TextFieldWrapper } from './textfield';
+import { ButtonWrapper } from './button';
+import { FormContext } from '../../App';
+import useForm from './useForm';
 
 interface IManageGameWrapperProps {
-  handleNameChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  name: string;
-  handleJoinGameIdChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  joinGameId: string;
   createGame: () => void;
   joinGame: () => void;
   startGame: () => void;
@@ -19,48 +14,62 @@ interface IManageGameWrapperProps {
 }
 
 const ManageGameWrapper: React.SFC<IManageGameWrapperProps> = ({
-  handleNameChange,
-  name,
-  handleJoinGameIdChange,
-  joinGameId,
   createGame,
   joinGame,
   startGame,
   isInGame,
 }) => {
+  const classes = useStyles();
+
+  const {inputValues, handleOnChange} = useContext(FormContext);
   return (
-    <InputsWrapper>
+    <div className={classes.main}>
       {!isInGame ? (
-        <React.Fragment>
-          <InputWrapper>
-            <Input
-              placeholder="Enter Name"
-              value={name}
-              onChange={handleNameChange}
-            />
-          </InputWrapper>
-          <InputWrapper>
-            <Input
-              placeholder="Enter Game Id To Join"
-              value={joinGameId}
-              onChange={handleJoinGameIdChange}
-            />
-          </InputWrapper>{' '}
-        </React.Fragment>
+        <div className={classes.inputsWrapper}>
+          <TextFieldWrapper
+            value={inputValues.name}
+            name="name"
+            label="Enter Name"
+            handleOnChange={handleOnChange}
+          />
+          <TextFieldWrapper
+            value={inputValues.joinGameId}
+            name="joinGameId"
+            label="Enter GameId to Join Game"
+            handleOnChange={handleOnChange}
+          />
+          <SliderWrapper
+            value={inputValues.numberOfQuestions}
+            name="numberOfQuestions"
+            label={`${inputValues.numberOfQuestions} Questions`}
+            handleOnChange={handleOnChange}
+          />
+          <SliderWrapper
+            value={inputValues.secondsPerQuestion}
+            name="secondsPerQuestion"
+            label={`${inputValues.secondsPerQuestion} Seconds Per Question`}
+            handleOnChange={handleOnChange}
+          />
+        </div>
       ) : null}
-      <ButtonsWrapper>
-        {!isInGame ? (
-          <React.Fragment>
-            {!joinGameId ? (
-              <Button onClick={createGame}>Create Game</Button>
-            ) : null}
-            {joinGameId ? <Button onClick={joinGame}>Join Game</Button> : null}
-          </React.Fragment>
-        ) : (
-          <Button onClick={startGame}>Start Game</Button>
-        )}
-      </ButtonsWrapper>
-    </InputsWrapper>
+      <React.Fragment>
+        {/* <ButtonWrapper */}
+        {/*   onClick={createGame} */}
+        {/*   label="Create Game" */}
+        {/*   visible={!isInGame && !!!joinGameId} */}
+        {/* /> */}
+        {/* <ButtonWrapper */}
+        {/*   onClick={joinGame} */}
+        {/*   label="Join Game" */}
+        {/*   visible={!isInGame && !!joinGameId} */}
+        {/* /> */}
+        {/* <ButtonWrapper */}
+        {/*   onClick={startGame} */}
+        {/*   label="Start Game" */}
+        {/*   visible={isInGame} */}
+        {/* /> */}
+      </React.Fragment>
+    </div>
   );
 };
 
