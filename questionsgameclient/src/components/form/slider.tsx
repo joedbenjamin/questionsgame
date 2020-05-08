@@ -6,6 +6,8 @@ interface ISlider {
   value: number;
   label: string;
   name: string;
+  min: number;
+  max: number;
 }
 
 export const SliderWrapper: React.SFC<ISlider> = ({
@@ -13,6 +15,8 @@ export const SliderWrapper: React.SFC<ISlider> = ({
   label,
   handleOnChange,
   name,
+  min,
+  max
 }) => {
   return (
     <React.Fragment>
@@ -21,12 +25,12 @@ export const SliderWrapper: React.SFC<ISlider> = ({
       </Typography>
       <Slider
         aria-labelledby="discrete-slider-small-steps"
-        min={5}
-        max={25}
+        min={min}
+        max={max}
         name={name}
         valueLabelDisplay="auto"
         value={value}
-        onChange={(_: any, newValue) => handleOnChange(name, newValue)}
+        onChange={(_: any, value) => handleOnChange(name, value)}
         color="secondary"
       />
     </React.Fragment>

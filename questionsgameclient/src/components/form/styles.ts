@@ -14,9 +14,15 @@ export const useStyles = makeStyles((theme) => ({
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'column',
-    marginTop: '2em'
+    margin: '2em 0'
   },
   margin: {
     height: theme.spacing(10),
   },
+  buttonsWrapper: {
+    display: 'flex',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    width: '100%'
+  }
 }));

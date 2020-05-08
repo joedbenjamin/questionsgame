@@ -2,19 +2,17 @@ import React from 'react';
 import { Button } from '@material-ui/core';
 
 interface IButton {
-  onClick: (value: any) => void;
   label: string;
   visible: boolean;
 }
 
 export const ButtonWrapper: React.SFC<IButton> = ({
   label,
-  onClick,
   visible,
 }) => {
   return visible ? (
     <React.Fragment>
-      <Button variant="contained" color="secondary" onClick={onClick}>
+      <Button type="submit" variant="contained" color="secondary">
         {label}
       </Button>
     </React.Fragment>

@@ -6,6 +6,8 @@ interface ITextField {
   value: string;
   label: string;
   name: string;
+  required?: boolean;
+  maxLength?: number;
 }
 
 export const TextFieldWrapper: React.SFC<ITextField> = ({
@@ -13,6 +15,8 @@ export const TextFieldWrapper: React.SFC<ITextField> = ({
   label,
   handleOnChange,
   name,
+  required = false,
+  maxLength = 100
 }) => {
   return (
     <React.Fragment>
@@ -25,6 +29,8 @@ export const TextFieldWrapper: React.SFC<ITextField> = ({
         InputLabelProps={{ shrink: true }}
         id="standard-basic"
         label={label}
+        required={required}
+        inputProps={{ maxLength }}
       />
     </React.Fragment>
   );

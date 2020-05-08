@@ -4,72 +4,74 @@ import { SliderWrapper } from './slider';
 import { TextFieldWrapper } from './textfield';
 import { ButtonWrapper } from './button';
 import { FormContext } from '../../App';
-import useForm from './useForm';
+import { FormControl } from '@material-ui/core';
+import Copy from '../copy';
 
 interface IManageGameWrapperProps {
-  createGame: () => void;
-  joinGame: () => void;
-  startGame: () => void;
   isInGame: boolean;
+  handleFormSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }
 
 const ManageGameWrapper: React.SFC<IManageGameWrapperProps> = ({
-  createGame,
-  joinGame,
-  startGame,
   isInGame,
+  handleFormSubmit,
 }) => {
   const classes = useStyles();
 
-  const {inputValues, handleOnChange} = useContext(FormContext);
+  const {
+    inputValues: { name, joinGameId, numberOfQuestions, secondsPerQuestion },
+    handleOnChange,
+  } = useContext(FormContext);
   return (
-    <div className={classes.main}>
+    <form onSubmit={handleFormSubmit} className={classes.main}>
       {!isInGame ? (
         <div className={classes.inputsWrapper}>
+          <FormControl>
+            <TextFieldWrapper
+              value={name}
+              name="name"
+              label="Enter Name"
+              handleOnChange={handleOnChange}
+              required={true}
+              maxLength={15}
+            />
+          </FormControl>
           <TextFieldWrapper
-            value={inputValues.name}
-            name="name"
-            label="Enter Name"
-            handleOnChange={handleOnChange}
-          />
-          <TextFieldWrapper
-            value={inputValues.joinGameId}
+            value={joinGameId}
             name="joinGameId"
             label="Enter GameId to Join Game"
             handleOnChange={handleOnChange}
           />
           <SliderWrapper
-            value={inputValues.numberOfQuestions}
+            value={numberOfQuestions}
             name="numberOfQuestions"
-            label={`${inputValues.numberOfQuestions} Questions`}
+            label={`${numberOfQuestions} Questions`}
             handleOnChange={handleOnChange}
+            min={5}
+            max={20}
           />
           <SliderWrapper
-            value={inputValues.secondsPerQuestion}
+            value={secondsPerQuestion}
             name="secondsPerQuestion"
-            label={`${inputValues.secondsPerQuestion} Seconds Per Question`}
+            label={`${secondsPerQuestion} Seconds Per Question`}
             handleOnChange={handleOnChange}
+            min={10}
+            max={20}
           />
         </div>
       ) : null}
       <React.Fragment>
-        {/* <ButtonWrapper */}
-        {/*   onClick={createGame} */}
-        {/*   label="Create Game" */}
-        {/*   visible={!isInGame && !!!joinGameId} */}
-        {/* /> */}
-        {/* <ButtonWrapper */}
-        {/*   onClick={joinGame} */}
-        {/*   label="Join Game" */}
-        {/*   visible={!isInGame && !!joinGameId} */}
-        {/* /> */}
-        {/* <ButtonWrapper */}
-        {/*   onClick={startGame} */}
-        {/*   label="Start Game" */}
-        {/*   visible={isInGame} */}
-        {/* /> */}
+        <ButtonWrapper
+          label="Create Game"
+          visible={!isInGame && !!!joinGameId}
+        />
+        <ButtonWrapper label="Join Game" visible={!isInGame && !!joinGameId} />
+        <div className={classes.buttonsWrapper}>
+          <ButtonWrapper label="Start Game" visible={isInGame} />
+          <Copy joinGameId={joinGameId} visible={isInGame} />
+        </div>
       </React.Fragment>
-    </div>
+    </form>
   );
 };
 

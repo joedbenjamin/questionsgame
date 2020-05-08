@@ -7,19 +7,28 @@ import {
   GlobalStyles,
   Background,
   Game,
-  Loading,
 } from './questions';
 import Welcome from './components/welcome';
 import ManageGameWrapper from './components/form';
 import LeaderBoardComp from './components/leaderboard';
-import { LeaderBoardSection } from './components/leaderboard/styles';
 import Questions from './components/questions';
 import { decodeHTML } from './utils';
 import Answers from './components/answers';
 import Errors from './components/errors';
 import useForm from './components/form/useForm';
+import {
+  Divider,
+  Backdrop,
+  CircularProgress,
+  makeStyles,
+} from '@material-ui/core';
 // import { FormContext } from './components/form';
-
+const useStyles = makeStyles((theme) => ({
+  backdrop: {
+    zIndex: theme.zIndex.drawer + 1,
+    color: '#fff',
+  },
+}));
 const getWebSocketURL: any = () =>
   process.env.NODE_ENV === 'production'
     ? process.env.REACT_APP_PROD_WEBSOCKETS_URL
@@ -30,9 +39,7 @@ const ws = new WebSocket(getWebSocketURL());
 export const FormContext = React.createContext<any>({});
 const App = () => {
   const [gameId, setGameId] = useState('');
-  const [joinGameId, setJoinGameId] = useState('');
   const [clients, setClients] = useState([]);
-  const [name, setName] = useState('');
   const [question, setQuestion]: any = useState('');
   const [questionId, setQuestionId]: any = useState('');
   const [answers, setAnswers]: any = useState([]);
@@ -43,14 +50,20 @@ const App = () => {
   const [isInGame, setIsInGame]: any = useState(false);
   const [serverError, setServerError]: any = useState(false);
   const [isLoading, setIsLoading]: any = useState(false);
-  const [secondsPerQuestion, setSecondsPerQuestion] = useState(10);
-  const [numberOfQuestions, setNumberOfQuestions] = useState(15);
+
   const { inputValues, handleOnChange } = useForm({
     name: '',
     joinGameId: '',
     numberOfQuestions: 10,
     secondsPerQuestion: 15,
   });
+  const classes = useStyles();
+  const {
+    name,
+    numberOfQuestions,
+    secondsPerQuestion,
+    joinGameId,
+  } = inputValues;
   useEffect(() => {
     ws.onmessage = function (event) {
       // console.log(event);
@@ -102,6 +115,7 @@ const App = () => {
       }
 
       if (data.gameId) {
+        handleOnChange('joinGameId', data.gameId);
         setGameId(data.gameId);
       }
 
@@ -143,7 +157,7 @@ const App = () => {
 
       if (data.method === 'endGame') {
         setGameId('-1');
-        setJoinGameId('');
+        handleOnChange('joinGameId', '');
         setIsInGame(data.isInGame);
       }
     };
@@ -153,6 +167,14 @@ const App = () => {
       // ws.send(JSON.stringify(obj));
     };
   }, []);
+
+  const handleFormSubmit = (e: React.FormEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if(!isInGame && !!!joinGameId){
+      createGame();
+    }
+  };
 
   const createGame = () => {
     let obj = { method: 'create', name, numberOfQuestions, secondsPerQuestion };
@@ -179,46 +201,31 @@ const App = () => {
     ws.send(JSON.stringify(obj));
   };
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setName(e.currentTarget.value);
-  };
-
-  const handleJoinGameIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setJoinGameId(e.currentTarget.value);
-  };
-
-  const handleSecondsPerQuestionChange = (value: any) => {
-    setSecondsPerQuestion(value);
-  };
-
-  const handleNumberOfQuestionsChange = (value: any) => {
-    setNumberOfQuestions(value);
-  };
   return (
     <React.Fragment>
       <FormContext.Provider value={{ inputValues, handleOnChange }}>
         <GlobalStyles />
-        <Loading isLoading={isLoading} />
+        {isLoading ? (
+          <Backdrop className={classes.backdrop} open={true}>
+            <CircularProgress color="inherit" />
+          </Backdrop>
+        ) : null}
         {/* <Errors /> */}
         <Background>
           <Welcome />
           <GameWrapper>
             <Game>
               <ManageGameWrapper
-                createGame={createGame}
-                joinGame={joinGame}
-                startGame={startGame}
                 isInGame={isInGame}
+                handleFormSubmit={handleFormSubmit}
               />
-              <LeaderBoardSection>
-                <LeaderBoardComp
-                  visible={!!gameId}
-                  gameId={gameId}
-                  clients={clients}
-                  clientId={clientId}
-                />
-              </LeaderBoardSection>
-              <Horizontal />
+              <LeaderBoardComp
+                visible={!!gameId}
+                gameId={gameId}
+                clients={clients}
+                clientId={clientId}
+              />
+              <Divider />
               <BottomWrapper timeRemaining={timeRemaining}>
                 <TimeRemaining>
                   {timeRemaining < 0 ? '0' : timeRemaining}
