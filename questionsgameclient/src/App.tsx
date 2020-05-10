@@ -39,6 +39,7 @@ const App = observer(() => {
     joinGameId: '',
     numberOfQuestions: 10,
     secondsPerQuestion: 15,
+    showJoinGame: false
   });
   const classes = useStyles();
   const {

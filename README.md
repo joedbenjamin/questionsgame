@@ -22,11 +22,8 @@ A trivia game that uses websockets to handle the game.
  * ok, I will try and keep this as short as possible.  I pretty much wanted to learn web sockets and figured a game would be great at forcing me learn the skills. I still want to add more features, mainly, b/c this is fun to me.  That is why this app is a work in progress.  Feel free to use the code, change at will and make it your own.
 
 ## The TriviaDb Api ##
-
-
-
-
-   
+ * Use of this free API to get the questions.  If this API is down, will use the local questions.ts file to load from
+   * [OpentDB API To get the Trivia Questions](https://opentdb.com/api_config.php)
 
 
 This projects is split into two sections. It is also a work in progres.

@@ -39,7 +39,7 @@ const ManageGameWrapper: React.SFC<IManageGameWrapperProps> = observer(
             <TextFieldWrapper
               value={joinGameId}
               name="joinGameId"
-              label="Enter GameId to Join Game"
+              label="Join a game with GameId"
               handleOnChange={handleOnChange}
             />
             <SliderWrapper
@@ -57,7 +57,7 @@ const ManageGameWrapper: React.SFC<IManageGameWrapperProps> = observer(
               label={`${secondsPerQuestion} Seconds Per Question`}
               handleOnChange={handleOnChange}
               min={3}
-              max={15}
+              max={20}
               visible={!!!joinGameId}
             />
           </div>
