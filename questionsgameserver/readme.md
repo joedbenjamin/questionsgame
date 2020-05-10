@@ -3,7 +3,7 @@
 ## the Server Code
 
 ### package.json
-  * You could clone all the files and just run yarn or npm i to install all the packages or you could install them by running the following commands, using either yarn or npm ;-)
+  * You could clone all the files and just run yarn or npm i to install all the packages or you could install them by running the following commands, using either yarn or npm ;-)  -- Also, keep in my, this is a work in progress and I will try to keep the documentation in sync but at times it could not match... ;-)
 
   * Dependecies
 ```
@@ -14,10 +14,10 @@ npm i axios, express, uuid, ws -S
 ```
   * Dev Dependecies
 ```
-yarn add @types/axios, @types/node, @types/ramda, @types/express, @types/uuid, @types/ws, nodemon, ts-node, typescript -D
+yarn add @types/axios, @types/node, @types/express, @types/uuid, @types/ws, nodemon, ts-node, typescript -D
 ```
 ```
-npm i @types/axios, @types/node, @types/ramda, @types/express, @types/uuid, @types/ws, nodemon, ts-node, typescript -D
+npm i @types/axios, @types/node, @types/express, @types/uuid, @types/ws, nodemon, ts-node, typescript -D
 ```
 
 To start the server run...
@@ -178,6 +178,7 @@ Now that we have that out the way - let's get to the fun stuff (the code) - we w
       * only join game is client is not already in a game
     * start - starts the game
     * guess - checks the answered question in a game
+    * reconnect - the clients is reconnecting to the server
 
 <hr/>
 
@@ -197,7 +198,7 @@ export const createGame = async (
   name: string,
   games: IGame[],
 ) => {
-  const questions = await getQuestions(settings.questionsCount);
+  const questions = await getQuestions(settings.questionsCount, ws);
   const game = {
     settings: settings,
     id: uuidv4(),
@@ -208,8 +209,6 @@ export const createGame = async (
         name,
         score: 0,
         ws,
-        //creates a new list with the length being the questionsCount
-        //all items in the list are defaulted being not answered
         questionsAnswered: new Array(settings.questionsCount).fill(
           eQuestionAnswered.notAnswered,
         ),
@@ -236,12 +235,12 @@ export const createGame = async (
  * First, we wait for the async **getQuestions** method
    * send isLoading to client to let client know to display loading gif
    * call the opentdb endpoint to get the questions
+   * if by some chance opentdb is down, will use some questions from the json file
    * id - use uuidv4 to get a unique identifier
    * seq - iterates the seq, starting at 1
    * answers - calls the getAnswers to build the data for all the answers
    * text - sets the display text of the question
    * clientIdsWhoAnswered - use to store all clients who answered the question - This is used in the score calcualtion which we will discuss later
-   * if there an error, send it to the client
    * once result comes back, send isLoading as false to client
 
 
@@ -250,35 +249,28 @@ const getQuestions = async (
   count: number,
   ws: WebSocket,
 ): Promise<IQuestion[]> => {
-  sendSocket({ method: eRouteMethods.create, isLoading: true }, ws);
-  const result = await axios
-    .get(
-      `https://opentdb.com/api.php?type=multiple&amount=${count}&category=18`,
-    )
+  sendSocket({ method: eRouteMethods.processing, isLoading: true }, ws);
+  const questions = await axios
+    .get(`https://opentdb.com/api.php?type=multiple&amount=${100}`, {
+      timeout: 2000,
+    })
     .then(function (response: any) {
-      return response.data.results.map((resp: any, index: number) => ({
-        id: uuidv4(),
-        seq: ++index,
-        answers: getAnswers({
-          correctAnswer: resp.correct_answer,
-          incorrectAnswers: resp.incorrect_answers,
-        }),
-        text: resp.question,
-        clientIdsWhoAnswered: [],
-      }));
+      return shuffle(response.data.results, 2).slice(0, count);
     })
     .catch(() => {
-      sendSocket(
-        {
-          method: eRouteMethods.create,
-          error: 'api is down, try back later',
-          isLoading: false,
-        },
-        ws,
-      );
-      throw 'api is down';
+      return shuffle(questionsJson(), 2).slice(0, count);
     });
-  sendSocket({ method: eRouteMethods.create, isLoading: false }, ws);
+  const result: any = questions.map((resp: any, index: number) => ({
+    id: uuidv4(),
+    seq: ++index,
+    answers: getAnswers({
+      correctAnswer: resp.correct_answer,
+      incorrectAnswers: resp.incorrect_answers,
+    }),
+    text: resp.question,
+    clientIdsWhoAnswered: [],
+  }));
+  sendSocket({ method: eRouteMethods.processing, isLoading: false }, ws);
   return result;
 };
 ```
@@ -308,20 +300,26 @@ const getAnswers = (answers: IGetAnswers): IAnswer[] => {
 ```
 
  * The **shuffle** method is used to randomize the answers position
+ * creates a loop to shuffle the list as many times as set, this may be overkill but this seems to keep the answers in random spots
    * goes through the array
    * sets j to Math.floor of the random number at each index of interation
    * sets the temp to be the value at the current index
    * then, replaces the index with the new random one
    * then, sets the index of j to what temp was
-   * things to know, doing it this way may cause some interations to switch values that has already been switched but that is ok - this seems to be the best approach to have this fully randomized
+   * randomly reverse the list of answers
 
 ```typescript
-const shuffle = (array: IAnswer[]): IAnswer[] => {
-  array.forEach((el: any, index: number) => {
-    const j = Math.floor(Math.random() * index);
-    const temp = el;
-    array[index] = array[j];
-    array[j] = temp;
+const shuffle = (array: any[], times: number = 3): any[] => {
+  new Array(times).fill(1).forEach(() => {
+    array.forEach((el: any, index: number) => {
+      const j = Math.floor(Math.random() * index);
+      const temp = el;
+      array[index] = array[j];
+      array[j] = temp;
+    });
+    if (Math.ceil(Math.random() * 100) % 2 > 0) {
+      array = array.reverse();
+    }
   });
   return array;
 };
@@ -334,8 +332,8 @@ const shuffle = (array: IAnswer[]): IAnswer[] => {
     * gets the game by id
     * adds the client to the game
     * timer - time per question
-    * send response back to client with the clientid as well as the isInGame flag
-    * send response to all clients in the game with gameId and list of clients in the game
+    * send response back to client with the clientid as well as the isInGame flag and gameId
+    * send response to all clients in the game with list of clients in the game
 
 ```typescript
 export const joinGame = (
@@ -346,25 +344,30 @@ export const joinGame = (
   ws: WebSocket,
 ) => {
   const game = gameById(gameId, games);
-  game?.clients.push({
-    id: clientId,
-    name,
-    score: 0,
-    ws,
-    questionsAnswered: new Array(game.settings.questionsCount).fill(
-      eQuestionAnswered.notAnswered,
-    ),
-  });
-  sendSocket({ method: 'setClient', clientId, isInGame: true }, ws);
-  game?.clients.forEach((client) => {
+  if (game && !game.hasStarted) {
+    game?.clients.push({
+      id: clientId,
+      name,
+      score: 0,
+      ws,
+      questionsAnswered: new Array(game.settings.questionsCount).fill(
+        eQuestionAnswered.notAnswered,
+      ),
+    });
     sendSocket(
-      {
-        method: 'updateClients',
-        clients: game?.clients,
-      },
-      client?.ws,
+      { method: 'setClient', clientId, isInGame: true, gameId: game?.id },
+      ws,
     );
-  });
+    game?.clients.forEach((client) => {
+      sendSocket(
+        {
+          method: 'updateclients',
+          clients: game?.clients,
+        },
+        client?.ws,
+      );
+    });
+  }
 };
 ```
 
@@ -374,6 +377,7 @@ export const joinGame = (
 
   * this is where the fun will start - key word **start** - ok, not really funny but this is where a lot of the logic is - let's get to it!!!
     * if game has not started, then set hasStarted to true
+    * send data to all clients to let them know the game has started as well as the questionsAnswered array
     * calls startInterval which is really where the fun starts (i'm serious this time!!!) 
 
 ```typescript
@@ -381,7 +385,18 @@ export const startGame = (games: IGame[], gameId: string) => {
   const game = gameById(gameId, games);
   if (game && !game.hasStarted) {
     game.hasStarted = true;
-    startInterval(game);
+    game?.clients.forEach((client) => {
+      sendSocket(
+        {
+          questionsAnswered: new Array(game.settings.questionsCount).fill(
+            eQuestionAnswered.notAnswered,
+          ),
+          isGameRunning: true
+        },
+        client?.ws,
+      );
+    });
+    startInterval(game, games);
   }
 };
 ```
@@ -407,7 +422,7 @@ export const startGame = (games: IGame[], gameId: string) => {
     ```
 
 ```typescript
-const startInterval = (game: IGame) => {
+const startInterval = (game: IGame, games: IGame[]) => {
   let start = Date.now();
   let index = 0;
   sendQuestion(game);
@@ -432,7 +447,7 @@ const startInterval = (game: IGame) => {
         }
       });
       if (!!!game.questions[index]) {
-        endGame(interval, game);
+        endGame(interval, game, games);
       } else {
         updateQuestion(game, index);
       }
@@ -505,10 +520,11 @@ const sendTimeRemaining = (
     * method - endGame
     * endGame - send as true to let client know the game is over
     * isInGame - set to false
+    * isGameRunning - set to false
   * send all clients the updated game, basically making sure they have the correct final score
 
 ```typescript
-const endGame = (interval: NodeJS.Timeout, game: IGame) => {
+const endGame = (interval: NodeJS.Timeout, game: IGame, games: IGame[]) => {
   clearInterval(interval);
   game.done = true;
 
@@ -518,11 +534,14 @@ const endGame = (interval: NodeJS.Timeout, game: IGame) => {
         method: 'endGame',
         endGame: true,
         isInGame: false,
+        isGameRunning: false,
       },
       client.ws,
     ),
   );
   sendClients(game);
+  //using this to clear the game out, so it doesn't take up memory
+  games = games.filter(g => g.id !== game.id)
 };
 ```
 
@@ -595,6 +614,55 @@ const checkGuess = (
         questionsAnswered: client?.questionsAnswered,
       }),
     );
+  }
+};
+```
+
+<hr/>
+
+* **Reconnect**
+
+  * this happens when the client tries to reconnect to the server
+    * the client will send in the oldClientId and a newClientId 
+  * get the game by the oldClientId
+  * if the client is found and the game is not done
+    * replace the oldClientId with the new ClientId
+    * send the updateQuestion to the client
+    * send some reconnect info the client
+  * else end the game
+
+```typescript
+const reconnect = (
+  games: IGame[],
+  gameId: string,
+  oldClientId: string,
+  newClientId: string,
+  ws: any,
+) => {
+  sendSocket({ method: 'reconnect' }, ws);
+  const game = gameById(gameId, games);
+  const client = clientById(oldClientId, game?.clients);
+  if (client && game && !game.done) {
+    client.id = newClientId;
+    client.ws = ws;
+    sendQuestion(game);
+    sendClients(game);
+    sendSocket(
+      {
+        method: 'reconnect',
+        isLoading: false,
+        oldClientId,
+        newClientId,
+        gameId,
+        clientId: newClientId,
+        isGameRunning: game.hasStarted,
+        isInGame: true,
+        questionsAnswered: client.questionsAnswered
+      },
+      ws,
+    );
+  } else {
+    sendSocket({ method: 'endGame', isLoading: false, endGame: true, isInGame: false, isGameRunning: false }, ws);
   }
 };
 ```

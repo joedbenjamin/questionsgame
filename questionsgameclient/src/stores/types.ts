@@ -15,14 +15,13 @@ export enum eQuestionAnswered {
 }
 
 export interface IGame {
-  id: string;
-  currentQuestionId: string;
-  done?: boolean;
-  hasStarted: boolean;
-  timer: number;
+  clientId: string;
   clients: IClient[];
-  questions: IQuestion[];
-  settings: ISettings;
+  isInGame: boolean;
+  setValueByName: (
+    name: string,
+    value: string | string[] | number | number[],
+  ) => void;
 }
 
 export interface IClient {
@@ -31,12 +30,6 @@ export interface IClient {
   questionsAnswered: number[];
   score: number;
   ws?: WebSocket;
-}
-
-export interface ISettings {
-  questionsCount: number;
-  timePerQuestion: number;
-  timeBreakPerQuestion: number;
 }
 
 export interface IQuestion {

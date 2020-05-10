@@ -55,7 +55,7 @@ const getQuestions = async (
   count: number,
   ws: WebSocket,
 ): Promise<IQuestion[]> => {
-  sendSocket({ method: eRouteMethods.create, isLoading: true }, ws);
+  sendSocket({ method: eRouteMethods.processing, isLoading: true }, ws);
   const questions = await axios
     .get(`https://opentdb.com/api.php?type=multiple&amount=${100}`, {
       timeout: 2000,
@@ -76,11 +76,11 @@ const getQuestions = async (
     text: resp.question,
     clientIdsWhoAnswered: [],
   }));
-  sendSocket({ method: eRouteMethods.create, isLoading: false }, ws);
+  sendSocket({ method: eRouteMethods.processing, isLoading: false }, ws);
   return result;
 };
 
-const endGame = (interval: NodeJS.Timeout, game: IGame) => {
+const endGame = (interval: NodeJS.Timeout, game: IGame, games: IGame[]) => {
   clearInterval(interval);
   game.done = true;
 
@@ -90,11 +90,14 @@ const endGame = (interval: NodeJS.Timeout, game: IGame) => {
         method: 'endGame',
         endGame: true,
         isInGame: false,
+        isGameRunning: false,
       },
       client.ws,
     ),
   );
   sendClients(game);
+  //using this to clear the game out, so it doesn't take up memory
+  games = games.filter(g => g.id !== game.id)
 };
 
 const updateQuestion = (game: IGame, index: number) => {
@@ -108,15 +111,15 @@ const sendTimeRemaining = (
   timePerQuestion: number,
   game: IGame,
 ) => {
-  game.clients.forEach((client) =>
+  game.clients.forEach((client) => {
     sendSocket(
       { timeRemaining: Math.ceil((timePerQuestion - time) / 1000).toFixed() },
       client.ws,
-    ),
-  );
+    );
+  });
 };
 
-const startInterval = (game: IGame) => {
+const startInterval = (game: IGame, games: IGame[]) => {
   let start = Date.now();
   let index = 0;
   sendQuestion(game);
@@ -141,7 +144,7 @@ const startInterval = (game: IGame) => {
         }
       });
       if (!!!game.questions[index]) {
-        endGame(interval, game);
+        endGame(interval, game, games);
       } else {
         updateQuestion(game, index);
       }
@@ -235,6 +238,40 @@ const checkGuess = (
   }
 };
 
+const reconnect = (
+  games: IGame[],
+  gameId: string,
+  oldClientId: string,
+  newClientId: string,
+  ws: any,
+) => {
+  sendSocket({ method: 'reconnect' }, ws);
+  const game = gameById(gameId, games);
+  const client = clientById(oldClientId, game?.clients);
+  if (client && game && !game.done) {
+    client.id = newClientId;
+    client.ws = ws;
+    sendQuestion(game);
+    sendClients(game);
+    sendSocket(
+      {
+        method: 'reconnect',
+        isLoading: false,
+        oldClientId,
+        newClientId,
+        gameId,
+        clientId: newClientId,
+        isGameRunning: game.hasStarted,
+        isInGame: true,
+        questionsAnswered: client.questionsAnswered
+      },
+      ws,
+    );
+  } else {
+    sendSocket({ method: 'endGame', isLoading: false, endGame: true, isInGame: false, isGameRunning: false }, ws);
+  }
+};
+
 const sendSocket = (obj: {}, ws?: WebSocket) =>
   ws && ws.send(JSON.stringify(obj));
 
@@ -246,4 +283,5 @@ export {
   sendSocket,
   startInterval,
   checkGuess,
+  reconnect,
 };

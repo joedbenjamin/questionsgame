@@ -6,73 +6,79 @@ import { ButtonWrapper } from './button';
 import { FormContext } from '../../App';
 import { FormControl } from '@material-ui/core';
 import Copy from '../copy';
+import { observer } from 'mobx-react-lite';
 
 interface IManageGameWrapperProps {
   isInGame: boolean;
   handleFormSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  isGameRunning: boolean;
 }
 
-const ManageGameWrapper: React.SFC<IManageGameWrapperProps> = ({
-  isInGame,
-  handleFormSubmit,
-}) => {
-  const classes = useStyles();
+const ManageGameWrapper: React.SFC<IManageGameWrapperProps> = observer(
+  ({ isInGame, handleFormSubmit, isGameRunning }) => {
+    const classes = useStyles();
 
-  const {
-    inputValues: { name, joinGameId, numberOfQuestions, secondsPerQuestion },
-    handleOnChange,
-  } = useContext(FormContext);
-  return (
-    <form onSubmit={handleFormSubmit} className={classes.main}>
-      {!isInGame ? (
-        <div className={classes.inputsWrapper}>
-          <FormControl>
+    const {
+      inputValues: { name, joinGameId, numberOfQuestions, secondsPerQuestion },
+      handleOnChange,
+    } = useContext(FormContext);
+    return (
+      <form onSubmit={handleFormSubmit} className={classes.main}>
+        {!isInGame ? (
+          <div className={classes.inputsWrapper}>
+            <FormControl>
+              <TextFieldWrapper
+                value={name}
+                name="name"
+                label="Enter Name"
+                handleOnChange={handleOnChange}
+                required={true}
+                maxLength={15}
+              />
+            </FormControl>
             <TextFieldWrapper
-              value={name}
-              name="name"
-              label="Enter Name"
+              value={joinGameId}
+              name="joinGameId"
+              label="Enter GameId to Join Game"
               handleOnChange={handleOnChange}
-              required={true}
-              maxLength={15}
             />
-          </FormControl>
-          <TextFieldWrapper
-            value={joinGameId}
-            name="joinGameId"
-            label="Enter GameId to Join Game"
-            handleOnChange={handleOnChange}
+            <SliderWrapper
+              value={numberOfQuestions}
+              name="numberOfQuestions"
+              label={`${numberOfQuestions} Questions`}
+              handleOnChange={handleOnChange}
+              min={5}
+              max={20}
+              visible={!!!joinGameId}
+            />
+            <SliderWrapper
+              value={secondsPerQuestion}
+              name="secondsPerQuestion"
+              label={`${secondsPerQuestion} Seconds Per Question`}
+              handleOnChange={handleOnChange}
+              min={3}
+              max={15}
+              visible={!!!joinGameId}
+            />
+          </div>
+        ) : null}
+        <React.Fragment>
+          <ButtonWrapper
+            label="Create Game"
+            visible={!isGameRunning && !isInGame && !!!joinGameId}
           />
-          <SliderWrapper
-            value={numberOfQuestions}
-            name="numberOfQuestions"
-            label={`${numberOfQuestions} Questions`}
-            handleOnChange={handleOnChange}
-            min={5}
-            max={20}
+          <ButtonWrapper
+            label="Join Game"
+            visible={!isGameRunning && !isInGame && !!joinGameId}
           />
-          <SliderWrapper
-            value={secondsPerQuestion}
-            name="secondsPerQuestion"
-            label={`${secondsPerQuestion} Seconds Per Question`}
-            handleOnChange={handleOnChange}
-            min={10}
-            max={20}
-          />
-        </div>
-      ) : null}
-      <React.Fragment>
-        <ButtonWrapper
-          label="Create Game"
-          visible={!isInGame && !!!joinGameId}
-        />
-        <ButtonWrapper label="Join Game" visible={!isInGame && !!joinGameId} />
-        <div className={classes.buttonsWrapper}>
-          <ButtonWrapper label="Start Game" visible={isInGame} />
-          <Copy joinGameId={joinGameId} visible={isInGame} />
-        </div>
-      </React.Fragment>
-    </form>
-  );
-};
+          <div className={classes.buttonsWrapper}>
+            <ButtonWrapper label="Start Game" visible={!isGameRunning && isInGame} />
+            <Copy joinGameId={joinGameId} visible={!isGameRunning && isInGame} />
+          </div>
+        </React.Fragment>
+      </form>
+    );
+  },
+);
 
 export default ManageGameWrapper;

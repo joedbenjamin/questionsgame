@@ -1,20 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import { useLocalStore, observer } from 'mobx-react-lite';
 import {
   GameWrapper,
-  Horizontal,
   BottomWrapper,
   TimeRemaining,
   GlobalStyles,
   Background,
   Game,
 } from './questions';
-import Welcome from './components/welcome';
 import ManageGameWrapper from './components/form';
 import LeaderBoardComp from './components/leaderboard';
 import Questions from './components/questions';
-import { decodeHTML } from './utils';
+import { decodeHTML, getWebSocketURL } from './utils';
 import Answers from './components/answers';
-import Errors from './components/errors';
+import ReconnectingWebSocket from 'reconnecting-websocket';
 import useForm from './components/form/useForm';
 import {
   Divider,
@@ -22,35 +21,19 @@ import {
   CircularProgress,
   makeStyles,
 } from '@material-ui/core';
-// import { FormContext } from './components/form';
+import GameStore from './stores/gameStore';
 const useStyles = makeStyles((theme) => ({
   backdrop: {
     zIndex: theme.zIndex.drawer + 1,
     color: '#fff',
   },
 }));
-const getWebSocketURL: any = () =>
-  process.env.NODE_ENV === 'production'
-    ? process.env.REACT_APP_PROD_WEBSOCKETS_URL
-    : process.env.REACT_APP_DEV_WEBSOCKETS_URL;
 
-const ws = new WebSocket(getWebSocketURL());
+const ws = new ReconnectingWebSocket(getWebSocketURL());
 
 export const FormContext = React.createContext<any>({});
-const App = () => {
-  const [gameId, setGameId] = useState('');
-  const [clients, setClients] = useState([]);
-  const [question, setQuestion]: any = useState('');
-  const [questionId, setQuestionId]: any = useState('');
-  const [answers, setAnswers]: any = useState([]);
-  const [correctAnswerId, setCorrectAnswerId]: any = useState(undefined);
-  const [answeredQuestions, setAnsweredQuestions]: any = useState([]);
-  const [clientId, setClientId]: any = useState('');
-  const [timeRemaining, setTimeRemaining]: any = useState(-1);
-  const [isInGame, setIsInGame]: any = useState(false);
-  const [serverError, setServerError]: any = useState(false);
-  const [isLoading, setIsLoading]: any = useState(false);
-
+const App = observer(() => {
+  const store = useLocalStore(() => GameStore);
   const { inputValues, handleOnChange } = useForm({
     name: '',
     joinGameId: '',
@@ -65,114 +48,51 @@ const App = () => {
     joinGameId,
   } = inputValues;
   useEffect(() => {
-    ws.onmessage = function (event) {
-      // console.log(event);
+    ws.addEventListener('message', function (event) {
       const data = JSON.parse(event.data);
-
-      // if (data.method === 'create') {
-      //   setGameId(data.gameId);
-      //   setClients(data.clients);
-      //   setClientId(data.clientId);
-      //   setIsInGame(data.isInGame);
-      // }
-      // if (data.method === 'setClient') {
-      //   setClientId(data.clientId);
-      //   setIsInGame(data.isInGame);
-      // }
-      // if (data.method === 'updateClients') {
-      //   setGameId(data.gameId || gameId);
-      //   setClients(data.clients);
-      // }
-      // if (data.questionsAnswered) {
-      //   setAnsweredQuestions(data.questionsAnswered);
-      // }
-      // if (data.method === 'sendQuestion') {
-      //   setQuestion(data.question);
-      //   setQuestionId(data.questionId);
-      //   setCorrectAnswerId(undefined);
-      //   setAnswers(data.answers);
-      // }
-      // if (data.method === 'checkGuess') {
-      //   setCorrectAnswerId(data.correctAnswerId);
-      //   setAnsweredQuestions(data.questionsAnswered);
-      // }
-      //
-      // if (data.timeRemaining) {
-      //   setTimeRemaining(data.timeRemaining);
-      // }
-      //
-      // if (!!data.isInGame?.toString()) {
-      //   console.log('isinggame', data.isInGame);
-      //   setIsInGame(data.isInGame);
-      // }
-      //
-
-      if (data.method === 'create') {
-        setIsLoading(data.isLoading);
-        if (data.error) {
-          setServerError(data.error);
-        }
-      }
-
-      if (data.gameId) {
-        handleOnChange('joinGameId', data.gameId);
-        setGameId(data.gameId);
-      }
-
       if (data.clientId) {
-        setClientId(data.clientId);
+        window.localStorage.setItem('clientId', data.clientId);
       }
-
-      if (data.clients) {
-        setClients(data.clients);
+      if (data.gameId) {
+        window.localStorage.setItem('gameId', data.gameId);
+        handleOnChange('joinGameId', data.gameId);
       }
-
       if (data.question) {
-        setQuestion(data.question);
-        setQuestionId(data.questionId);
-        setCorrectAnswerId(undefined);
+        store.setValuesByName({ correctAnswerId: undefined });
       }
-
-      if (data.timeRemaining) {
-        setTimeRemaining(data.timeRemaining);
-      }
-
-      if (data.answers) {
-        setAnswers(data.answers);
-      }
-
-      if (data.correctAnswerId) {
-        console.log(data);
-        setCorrectAnswerId(data.correctAnswerId);
-      }
-
-      if (data.questionsAnswered) {
-        setAnsweredQuestions(data.questionsAnswered);
-      }
-
-      if (!!data.isInGame?.toString()) {
-        console.log('isinggame', data.isInGame);
-        setIsInGame(data.isInGame);
-      }
-
       if (data.method === 'endGame') {
-        setGameId('-1');
+        store.setValuesByName({ gameId: -1 });
         handleOnChange('joinGameId', '');
-        setIsInGame(data.isInGame);
       }
-    };
-    ws.onopen = () => {
+      store.setValuesByName(data);
+    });
+    ws.addEventListener('open', () => {
       ws.send(JSON.stringify({ method: 'connecting' }));
-      // let obj = { method: 'create' };
-      // ws.send(JSON.stringify(obj));
-    };
+      const clientId = window.localStorage.getItem('clientId');
+      const gameId = window.localStorage.getItem('gameId');
+      if (!!clientId && !!gameId) {
+        const obj = {
+          method: 'reconnect',
+          clientId,
+          gameId,
+        };
+        ws.send(JSON.stringify(obj));
+      }
+    });
+    ws.addEventListener('close', () => {
+      store.setValuesByName({ isLoading: true });
+    });
   }, []);
 
   const handleFormSubmit = (e: React.FormEvent<HTMLElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if(!isInGame && !!!joinGameId){
+    if (!store.isInGame && !!!joinGameId) {
       createGame();
+    } else if (!store.isInGame && !!joinGameId) {
+      joinGame();
+    } else if (store.isInGame) {
+      startGame();
     }
   };
 
@@ -187,15 +107,15 @@ const App = () => {
   };
 
   const startGame = () => {
-    let obj = { method: 'start', gameId: gameId };
+    let obj = { method: 'start', gameId: store.gameId };
     ws.send(JSON.stringify(obj));
   };
 
   const checkGuess = (e: any) => {
     var obj = {
       method: 'guess',
-      questionId,
-      gameId,
+      questionId: store.questionId,
+      gameId: store.gameId,
       answerId: e.currentTarget.getAttribute('data-id'),
     };
     ws.send(JSON.stringify(obj));
@@ -205,47 +125,50 @@ const App = () => {
     <React.Fragment>
       <FormContext.Provider value={{ inputValues, handleOnChange }}>
         <GlobalStyles />
-        {isLoading ? (
+        {store.isLoading ? (
           <Backdrop className={classes.backdrop} open={true}>
             <CircularProgress color="inherit" />
           </Backdrop>
         ) : null}
-        {/* <Errors /> */}
         <Background>
-          <Welcome />
           <GameWrapper>
-            <Game>
-              <ManageGameWrapper
-                isInGame={isInGame}
-                handleFormSubmit={handleFormSubmit}
-              />
-              <LeaderBoardComp
-                visible={!!gameId}
-                gameId={gameId}
-                clients={clients}
-                clientId={clientId}
-              />
-              <Divider />
-              <BottomWrapper timeRemaining={timeRemaining}>
-                <TimeRemaining>
-                  {timeRemaining < 0 ? '0' : timeRemaining}
-                </TimeRemaining>
-                <Questions
-                  question={decodeHTML(question || '')}
-                  answeredQuestions={answeredQuestions}
+            {!store.isLoading ? (
+              <Game>
+                <ManageGameWrapper
+                  isInGame={store.isInGame}
+                  handleFormSubmit={handleFormSubmit}
+                  isGameRunning={store.isGameRunning}
                 />
-                <Answers
-                  checkGuess={checkGuess}
-                  answers={answers}
-                  correctAnswerId={correctAnswerId}
+                <LeaderBoardComp
+                  visible={store.clients.length > 0}
+                  gameId={store.gameId}
+                  clients={store.clients}
+                  clientId={store.clientId}
                 />
-              </BottomWrapper>
-            </Game>
+                <Divider />
+                {store.isInGame ? (
+                  <BottomWrapper timeRemaining={store.timeRemaining}>
+                    <TimeRemaining>
+                      {store.timeRemaining < 0 ? '0' : store.timeRemaining}
+                    </TimeRemaining>
+                    <Questions
+                      question={decodeHTML(store.question || '')}
+                      answeredQuestions={store.questionsAnswered}
+                    />
+                    <Answers
+                      checkGuess={checkGuess}
+                      answers={store.answers}
+                      correctAnswerId={store.correctAnswerId}
+                    />
+                  </BottomWrapper>
+                ) : null}
+              </Game>
+            ) : null}
           </GameWrapper>
         </Background>
       </FormContext.Provider>
     </React.Fragment>
   );
-};
+});
 
 export default App;

@@ -5,20 +5,18 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Divider,
-  Button,
 } from '@material-ui/core';
 import { useStyles, StyledTableRow, StyledTableCell } from './styles';
 import AccountCircleIcon from '@material-ui/icons/AccountCircle';
-import Copy from '../copy';
+
 interface ILeaderBoardCompProps {
   gameId: string;
   visible: boolean;
   clients: any[];
   clientId: string;
 }
+
 const LeaderBoardComp: React.SFC<ILeaderBoardCompProps> = ({
-  gameId,
   visible,
   clients,
   clientId,
@@ -53,7 +51,7 @@ const LeaderBoardComp: React.SFC<ILeaderBoardCompProps> = ({
 
   return visible ? (
     <React.Fragment>
-      <TableContainer className={classes.container}>
+      <TableContainer>
         <Table className={classes.table} stickyHeader aria-label="simple table">
           <TableHead>
             <TableRow>

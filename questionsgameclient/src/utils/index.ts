@@ -4,4 +4,9 @@ const decodeHTML = (html: string) => {
   return el.value;
 };
 
-export { decodeHTML };
+const getWebSocketURL: any = () =>
+  process.env.NODE_ENV === 'production'
+    ? process.env.REACT_APP_PROD_WEBSOCKETS_URL
+    : process.env.REACT_APP_DEV_WEBSOCKETS_URL;
+
+export { decodeHTML, getWebSocketURL };

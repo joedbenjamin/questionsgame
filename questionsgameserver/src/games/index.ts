@@ -11,7 +11,6 @@ export const createGame = async (
   games: IGame[],
 ) => {
   const questions = await getQuestions(settings.questionsCount, ws);
-  console.log('questions ', questions);
   const game = {
     settings: settings,
     id: uuidv4(),
@@ -69,7 +68,7 @@ export const joinGame = (
     game?.clients.forEach((client) => {
       sendSocket(
         {
-          method: 'updateClients',
+          method: 'updateclients',
           clients: game?.clients,
         },
         client?.ws,
@@ -88,10 +87,11 @@ export const startGame = (games: IGame[], gameId: string) => {
           questionsAnswered: new Array(game.settings.questionsCount).fill(
             eQuestionAnswered.notAnswered,
           ),
+          isGameRunning: true
         },
         client?.ws,
       );
     });
-    startInterval(game);
+    startInterval(game, games);
   }
 };

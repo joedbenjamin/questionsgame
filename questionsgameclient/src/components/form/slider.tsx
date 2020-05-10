@@ -8,6 +8,7 @@ interface ISlider {
   name: string;
   min: number;
   max: number;
+  visible: boolean;
 }
 
 export const SliderWrapper: React.SFC<ISlider> = ({
@@ -16,9 +17,10 @@ export const SliderWrapper: React.SFC<ISlider> = ({
   handleOnChange,
   name,
   min,
-  max
+  max,
+  visible,
 }) => {
-  return (
+  return visible ? (
     <React.Fragment>
       <Typography color="primary" id="discrete-slider-custom" gutterBottom>
         {label}
@@ -34,5 +36,5 @@ export const SliderWrapper: React.SFC<ISlider> = ({
         color="secondary"
       />
     </React.Fragment>
-  );
+  ) : null;
 };

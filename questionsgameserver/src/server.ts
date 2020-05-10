@@ -21,11 +21,12 @@ wss.on(
     ws.isAlive = true;
     const clientId = req.headers['sec-websocket-key'];
     ws.id = clientId;
+    console.log('clientid', clientId);
 
     //connection is up, let's add a simple simple event
     ws.on('message', async (message: string) => {
       ws.on('pong', heartbeat);
-      await handleRoute(message, games, clientId, ws);
+      await handleRoute(message, games, clientId, ws, req);
       // console.log(games);
       // ws.send(`# of games created ${games.length}`);
     });

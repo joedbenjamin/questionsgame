@@ -4,9 +4,8 @@ export const useStyles = makeStyles((theme) => ({
   inputsWrapper: {
     width: '80%',
     display: 'flex',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     flexDirection: 'column',
-    height: '25em',
     marginBottom: '2em',
   },
   main: {
@@ -24,5 +23,5 @@ export const useStyles = makeStyles((theme) => ({
     justifyContent: 'space-around',
     alignItems: 'center',
     width: '100%'
-  }
+  },
 }));

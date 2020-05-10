@@ -1,6 +1,6 @@
 import { IGame, eRouteMethods } from './types';
 import * as WebSocket from 'ws';
-import { isClientInGame, checkGuess } from './games/helper';
+import { isClientInGame, checkGuess, reconnect } from './games/helper';
 import { createGame, joinGame, startGame } from './games';
 
 export const handleRoute = async (
@@ -8,6 +8,7 @@ export const handleRoute = async (
   games: IGame[],
   clientId: string,
   ws: WebSocket,
+  req: any
 ) => {
   try {
     const obj = JSON.parse(message);
@@ -45,6 +46,14 @@ export const handleRoute = async (
 
     if (obj?.method === eRouteMethods.guess) {
       checkGuess(games, obj.gameId, clientId, obj.answerId, obj.questionId);
+    }
+
+    if (obj?.method === 'reconnect') {
+      ws.send(JSON.stringify({method: 'reconnect', message: 'tryingt to reconnect'}));
+      if(!!obj?.gameId && !!obj?.clientId){
+        const newClientId = req.headers['sec-websocket-key'];
+        reconnect(games, obj.gameId, obj.clientId, newClientId, ws);
+      }
     }
   } catch (e) {
     //need to clearly state the errors

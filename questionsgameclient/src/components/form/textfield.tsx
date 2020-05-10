@@ -1,5 +1,6 @@
 import React from 'react';
 import { TextField } from '@material-ui/core';
+import {useStyles} from './styles';
 
 interface ITextField {
   handleOnChange: (name: string, value: string) => void;
@@ -18,9 +19,11 @@ export const TextFieldWrapper: React.SFC<ITextField> = ({
   required = false,
   maxLength = 100
 }) => {
+  const classes = useStyles();
   return (
     <React.Fragment>
       <TextField
+        className={classes.margin}
         value={value}
         name={name}
         onChange={(e) => handleOnChange(name, e.target.value)}
