@@ -2,6 +2,8 @@ This is my first time using websockets in a personal project and there may be co
 
 Check out my tutorials - [Joe B Programming Tutorials](https://www.youtube.com/channel/UCE9Nw2BQlSEM9Cz5ybO1CiQ?view_as=subscriber)
 
+[Play the game!!!](http://trivia-client-jdb.herokuapp.com/)
+
 # questionsgame
 A trivia game that uses websockets to handle the game.  
 
