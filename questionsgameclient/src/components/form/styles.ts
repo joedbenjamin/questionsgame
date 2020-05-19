@@ -1,5 +1,17 @@
 import {makeStyles} from '@material-ui/core';
 
+
+/*
+ * create empty array - let s:objs = []
+ * yank inside bracket
+ * yank all of bracket
+ * loop throughk
+ * getreg('a')
+ * create a directory - key: value
+ * 
+ */
+
+
 export const useStyles = makeStyles((theme) => ({
   inputsWrapper: {
     width: '80%',

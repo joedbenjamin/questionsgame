@@ -1,8 +1,35 @@
 import { observable, action } from 'mobx';
-import {IGame, IClient, IAnswer} from './types';
+import { IClient, IAnswer } from './types';
+import ReconnectingWebSocket from 'reconnecting-websocket';
+import {getWebSocketURL} from '../utils';
 
+class GameFormStore {
+  [key: string]: any;
 
-class GameStore implements IGame {
+  @observable
+  numberOfQuestions: number = 10;
+
+  @observable
+  secondsPerQuestion: number = 10;
+
+  @observable
+  joinGameId: string = '';
+
+  @observable
+  name: string = '';
+
+  @action
+  handleOnChange = (name: string, value: string | number | number[]) => {
+    this[name] = value;
+  }
+}
+
+class GameStore {
+
+  ws = new ReconnectingWebSocket(getWebSocketURL());
+
+  @observable form: GameFormStore = new GameFormStore();
+
   [key: string]: any;
 
   @observable
@@ -44,16 +71,65 @@ class GameStore implements IGame {
   @action
   setValuesByName = (name: any) => {
     Object.keys(name).forEach((key: string) => {
-      this[key] = name[key]
+      this[key] = name[key];
     });
-  }
+  };
 
   @action
-  setValueByName = (name: string, value: string | string[] | number | number[]) => {
+  setValueByName = (
+    name: string,
+    value: string | string[] | number | number[],
+  ) => {
     this[name] = value;
-  }
+  };
+
+  @action
+  handleFormSubmit = (e: React.FormEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const {joinGameId} = this.form;
+    if (!this.isInGame && !!!joinGameId) {
+      this.createGame();
+    } else if (!this.isInGame && !!joinGameId) {
+      this.joinGame();
+    } else if (this.isInGame) {
+      this.startGame();
+    }
+  };
+
+  @action
+  checkGuess = (e: any) => {
+    var obj = {
+      method: 'guess',
+      questionId: this.questionId,
+      gameId: this.gameId,
+      answerId: e.currentTarget.getAttribute('data-id'),
+    };
+    this.ws.send(JSON.stringify(obj));
+  };
+
+  createGame = () => {
+    const { numberOfQuestions, secondsPerQuestion, name } = this.form;
+    let obj = { method: 'create', name, numberOfQuestions, secondsPerQuestion };
+    this.ws.send(JSON.stringify(obj));
+  };
+
+  joinGame = () => {
+    const { name, joinGameId } = this.form;
+    let obj = { method: 'join', gameId: joinGameId, name };
+    this.ws.send(JSON.stringify(obj));
+  };
+
+  startGame = () => {
+    const { gameId } = this;
+    let obj = { method: 'start', gameId };
+    this.ws.send(JSON.stringify(obj));
+  };
+}
+
+export interface IGameStore {
+  gameStore?: GameStore;
 }
 
 const store = new GameStore();
-
 export default store;

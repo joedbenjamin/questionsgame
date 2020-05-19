@@ -14,16 +14,6 @@ export enum eQuestionAnswered {
   incorrect = 0,
 }
 
-export interface IGame {
-  clientId: string;
-  clients: IClient[];
-  isInGame: boolean;
-  setValueByName: (
-    name: string,
-    value: string | string[] | number | number[],
-  ) => void;
-}
-
 export interface IClient {
   id: string;
   name: string;
