@@ -7,17 +7,17 @@
 
   * Dependecies
 ```
-yarn add axios, express, uuid, ws
+yarn add axios express uuid ws
 ```
 ```
-npm i axios, express, uuid, ws -S
+npm i axios express uuid ws -S
 ```
   * Dev Dependecies
 ```
-yarn add @types/axios, @types/node, @types/express, @types/uuid, @types/ws, nodemon, ts-node, typescript -D
+yarn add @types/axios @types/node @types/express @types/uuid @types/ws nodemon ts-node typescript -D
 ```
 ```
-npm i @types/axios, @types/node, @types/express, @types/uuid, @types/ws, nodemon, ts-node, typescript -D
+npm i @types/axios @types/node @types/express @types/uuid @types/ws nodemon ts-node typescript -D
 ```
 
 To start the server run...
